@@ -140,7 +140,7 @@ export default function Navbar() {
 
                         {/* Resume CTA */}
                         <a 
-                            href="https://docs.google.com/document/d/1mvRdZLTz2fMvfVFzTic7fq6sQzb_hmAeuoX2NTauuVk/export?format=pdf" 
+                            href="https://docs.google.com/document/d/1e0oBS8s_4iinw_Anni83W7R516gQbQuRDVnn4xZFGH4/edit?usp=sharing" 
                             target="_blank" 
                             rel="noopener noreferrer" 
                             className="hidden sm:inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-medium border hover:scale-[1.02] active:scale-[0.98] transition-all duration-300"
@@ -194,7 +194,7 @@ export default function Navbar() {
 
                         <div>
                             <a 
-                                href="https://docs.google.com/document/d/1mvRdZLTz2fMvfVFzTic7fq6sQzb_hmAeuoX2NTauuVk/export?format=pdf" 
+                                href="https://docs.google.com/document/d/1e0oBS8s_4iinw_Anni83W7R516gQbQuRDVnn4xZFGH4/edit?usp=sharing" 
                                 target="_blank" 
                                 rel="noopener noreferrer" 
                                 className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold text-white transition-all duration-300 bg-blue-500 hover:bg-blue-600 shadow-md shadow-blue-500/20"
