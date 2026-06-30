@@ -169,7 +169,7 @@ export default function Hero() {
                             <ArrowRight size={15} />
                         </a>
                         <a 
-                            href="https://drive.google.com/file/d/1mnBhpKIKWMSuTi-xrsiVfU13jmnCTPLs/view?usp=drive_link" 
+                            href="https://docs.google.com/document/d/1mvRdZLTz2fMvfVFzTic7fq6sQzb_hmAeuoX2NTauuVk/export?format=pdf" 
                             target="_blank" 
                             rel="noopener noreferrer" 
                             className="btn-secondary-style"
