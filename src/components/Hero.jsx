@@ -169,9 +169,10 @@ export default function Hero() {
                             <ArrowRight size={15} />
                         </a>
                         <a 
-                            href="https://docs.google.com/document/d/1e0oBS8s_4iinw_Anni83W7R516gQbQuRDVnn4xZFGH4/edit?usp=sharing" 
+                            href="/CV_Muhammad_Hafiz.pdf" 
                             target="_blank" 
                             rel="noopener noreferrer" 
+                            download="CV_Muhammad_Hafiz.pdf"
                             className="btn-secondary-style"
                         >
                             <Download size={14} />

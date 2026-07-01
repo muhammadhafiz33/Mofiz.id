@@ -140,9 +140,10 @@ export default function Navbar() {
 
                         {/* Resume CTA */}
                         <a 
-                            href="https://docs.google.com/document/d/1e0oBS8s_4iinw_Anni83W7R516gQbQuRDVnn4xZFGH4/edit?usp=sharing" 
+                            href="/CV_Muhammad_Hafiz.pdf" 
                             target="_blank" 
                             rel="noopener noreferrer" 
+                            download="CV_Muhammad_Hafiz.pdf"
                             className="hidden sm:inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-medium border hover:scale-[1.02] active:scale-[0.98] transition-all duration-300"
                             style={{ 
                                 borderColor: 'var(--border-color)',
@@ -194,9 +195,10 @@ export default function Navbar() {
 
                         <div>
                             <a 
-                                href="https://docs.google.com/document/d/1e0oBS8s_4iinw_Anni83W7R516gQbQuRDVnn4xZFGH4/edit?usp=sharing" 
+                                href="/CV_Muhammad_Hafiz.pdf" 
                                 target="_blank" 
                                 rel="noopener noreferrer" 
+                                download="CV_Muhammad_Hafiz.pdf"
                                 className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold text-white transition-all duration-300 bg-blue-500 hover:bg-blue-600 shadow-md shadow-blue-500/20"
                             >
                                 <span>Download CV</span>
