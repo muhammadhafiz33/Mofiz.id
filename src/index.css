@@ -71,17 +71,19 @@ body.light-mode .bg-grid-overlay {
 }
 
 .floating-blur-1 {
-  @apply fixed w-[350px] h-[350px] rounded-full blur-[120px] pointer-events-none z-[-1];
+  @apply fixed w-[350px] h-[350px] rounded-full blur-[80px] pointer-events-none z-[-1];
   background: radial-gradient(circle, rgba(59, 130, 246, 0.15) 0%, transparent 80%);
   top: 15%;
   left: 10%;
+  transform: translateZ(0);
 }
 
 .floating-blur-2 {
-  @apply fixed w-[400px] h-[400px] rounded-full blur-[140px] pointer-events-none z-[-1];
+  @apply fixed w-[400px] h-[400px] rounded-full blur-[90px] pointer-events-none z-[-1];
   background: radial-gradient(circle, rgba(6, 182, 212, 0.1) 0%, transparent 80%);
   bottom: 20%;
   right: 10%;
+  transform: translateZ(0);
 }
 
 /* Cursor Glow Spotlight */
@@ -101,10 +103,11 @@ body.light-mode .loader-screen {
 
 /* Navbar Style */
 .navbar-blur {
-  @apply fixed left-1/2 -translate-x-1/2 w-[92%] max-w-5xl rounded-full border backdrop-blur-xl z-50 transition-all duration-500 px-6 py-3.5;
+  @apply fixed left-1/2 -translate-x-1/2 w-[92%] max-w-5xl rounded-full border backdrop-blur-md z-50 transition-all duration-500 px-6 py-3.5;
   background-color: rgba(17, 24, 39, 0.7);
   border-color: var(--border-color);
   box-shadow: var(--shadow-sm);
+  transform: translateX(-50%) translateZ(0);
 }
 body.light-mode .navbar-blur {
   background-color: rgba(219, 234, 254, 0.85); /* Soft blue (blue-100) */

@@ -104,8 +104,12 @@ export default function Projects() {
                             {/* Decorative Minimalist CSS Thumbnail */}
                             <div className={`h-28 w-full bg-gradient-to-br ${project.graphicClass} relative overflow-hidden flex items-center justify-center border-b`} style={{ borderColor: 'var(--border-color)' }}>
                                 <motion.div 
-                                    className="absolute inset-0 bg-grid-overlay opacity-30"
-                                    animate={{ backgroundPosition: ["0px 0px", "40px 40px"] }}
+                                    className="absolute -inset-10 opacity-30"
+                                    style={{
+                                        backgroundImage: "radial-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px)",
+                                        backgroundSize: "24px 24px"
+                                    }}
+                                    animate={{ x: [0, -24], y: [0, -24] }}
                                     transition={{ repeat: Infinity, duration: 4, ease: "linear" }}
                                 />
                                 <div className="z-10 flex flex-col items-center gap-2">
