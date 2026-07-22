@@ -222,7 +222,7 @@ body.light-mode .btn-secondary-style:hover {
 
 /* Terminal Styles */
 .terminal-window {
-  @apply overflow-hidden border shadow-2xl;
+  @apply overflow-hidden border shadow-2xl transition-all duration-500;
   background-color: rgba(17, 24, 39, 0.85);
   border-color: var(--border-color);
   border-radius: 16px;
@@ -232,7 +232,7 @@ body.light-mode .terminal-window {
 }
 
 .terminal-header-bar {
-  @apply px-4 py-3 flex items-center justify-between border-b relative;
+  @apply px-4 py-3 flex items-center justify-between border-b relative transition-all duration-500;
   border-color: var(--border-color);
   background-color: rgba(0, 0, 0, 0.15);
 }
@@ -330,7 +330,7 @@ body.light-mode .terminal-window {
 
 /* Glassmorphism Badge */
 .glass-badge {
-  @apply border backdrop-blur-md px-3 py-1 rounded-full text-xs font-mono font-medium;
+  @apply border backdrop-blur-md px-3 py-1 rounded-full text-xs font-mono font-medium transition-all duration-500;
   background-color: rgba(255, 255, 255, 0.03);
   border-color: rgba(255, 255, 255, 0.08);
   color: var(--accent-secondary);
@@ -341,6 +341,11 @@ body.light-mode .glass-badge {
 }
 
 /* Light Mode Utility Overrides for Better Contrast */
+.text-white, .text-gray-300, .text-gray-400, .text-gray-500, 
+.bg-white\/5, .border-white\/5, .border-white\/10, .bg-white\/\[0\.01\] {
+  @apply transition-colors duration-500;
+}
+
 body.light-mode .text-white {
   color: var(--text-primary) !important;
 }
