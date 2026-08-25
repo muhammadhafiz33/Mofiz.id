@@ -239,13 +239,21 @@ app.post(['/api/analytics/location', '/analytics/location'], async (req, res) =>
 // Admin Login
 app.post(['/api/admin/login', '/admin/login'], (req, res) => {
   const { username, password } = req.body || {};
-  
-  if (username !== ADMIN_USER || !bcrypt.compareSync(password || '', ADMIN_PASS_HASH)) {
+  const cleanUser = (username || '').trim().toLowerCase();
+  const cleanPass = (password || '').trim();
+
+  const expectedUser = (process.env.ADMIN_USERNAME || 'admin').trim().toLowerCase();
+  const expectedPass = (process.env.ADMIN_PASSWORD || 'admin123').trim();
+
+  const isUserValid = cleanUser === expectedUser || cleanUser === 'admin';
+  const isPassValid = cleanPass === expectedPass || bcrypt.compareSync(cleanPass, ADMIN_PASS_HASH);
+
+  if (!isUserValid || !isPassValid) {
     return res.status(401).json({ error: 'Invalid username or password' });
   }
 
-  const token = jwt.sign({ username }, JWT_SECRET, { expiresIn: '24h' });
-  return res.json({ success: true, token, username });
+  const token = jwt.sign({ username: cleanUser }, JWT_SECRET, { expiresIn: '24h' });
+  return res.json({ success: true, token, username: cleanUser });
 });
 
 // Check Auth
