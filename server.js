@@ -6,7 +6,6 @@ import crypto from 'crypto';
 import { dbService } from './api/db.js';
 
 const app = express();
-const router = express.Router();
 
 const PORT = process.env.PORT || 3001;
 const JWT_SECRET = process.env.JWT_SECRET || 'hafiz_portfolio_super_secret_jwt_key_2026';
@@ -116,11 +115,11 @@ function authenticateToken(req, res, next) {
 }
 
 // ========================
-// PUBLIC ANALYTICS ROUTER
+// PUBLIC ANALYTICS ENDPOINTS
 // ========================
 
 // 1. Visit Tracking
-router.post('/analytics/visit', async (req, res) => {
+app.post(['/api/analytics/visit', '/analytics/visit'], async (req, res) => {
   try {
     const { anonymous_session_id, page, referrer } = req.body || {};
     if (!anonymous_session_id) {
@@ -162,7 +161,7 @@ router.post('/analytics/visit', async (req, res) => {
 });
 
 // 2. Pageview Tracking
-router.post('/analytics/pageview', async (req, res) => {
+app.post(['/api/analytics/pageview', '/analytics/pageview'], async (req, res) => {
   try {
     const { anonymous_session_id, page } = req.body || {};
     if (!anonymous_session_id || !page) {
@@ -183,7 +182,7 @@ router.post('/analytics/pageview', async (req, res) => {
 });
 
 // 3. Location Consent & GPS Tracking
-router.post('/analytics/location', async (req, res) => {
+app.post(['/api/analytics/location', '/analytics/location'], async (req, res) => {
   try {
     const { anonymous_session_id, latitude, longitude, accuracy, timestamp, consent_status } = req.body || {};
     if (!anonymous_session_id) {
@@ -211,11 +210,11 @@ router.post('/analytics/location', async (req, res) => {
 });
 
 // ========================
-// ADMIN ROUTER
+// ADMIN ENDPOINTS
 // ========================
 
 // Admin Login
-router.post('/admin/login', (req, res) => {
+app.post(['/api/admin/login', '/admin/login'], (req, res) => {
   const { username, password } = req.body || {};
   
   if (username !== ADMIN_USER || !bcrypt.compareSync(password || '', ADMIN_PASS_HASH)) {
@@ -227,12 +226,12 @@ router.post('/admin/login', (req, res) => {
 });
 
 // Check Auth
-router.get('/admin/check-auth', authenticateToken, (req, res) => {
+app.get(['/api/admin/check-auth', '/admin/check-auth'], authenticateToken, (req, res) => {
   return res.json({ authenticated: true, user: req.user });
 });
 
 // Admin Analytics Dashboard Stats
-router.get('/admin/analytics', authenticateToken, async (req, res) => {
+app.get(['/api/admin/analytics', '/admin/analytics'], authenticateToken, async (req, res) => {
   try {
     const summary = await dbService.getAnalyticsSummary();
     return res.json(summary);
@@ -243,7 +242,7 @@ router.get('/admin/analytics', authenticateToken, async (req, res) => {
 });
 
 // Admin Visitors List
-router.get('/admin/visitors', authenticateToken, async (req, res) => {
+app.get(['/api/admin/visitors', '/admin/visitors'], authenticateToken, async (req, res) => {
   try {
     const visitors = await dbService.getVisitorsList();
     return res.json({ visitors });
@@ -254,7 +253,7 @@ router.get('/admin/visitors', authenticateToken, async (req, res) => {
 });
 
 // Admin Locations (IP Geolocation vs Browser GPS)
-router.get('/admin/locations', authenticateToken, async (req, res) => {
+app.get(['/api/admin/locations', '/admin/locations'], authenticateToken, async (req, res) => {
   try {
     const locations = await dbService.getLocationsList();
     return res.json(locations);
@@ -263,10 +262,6 @@ router.get('/admin/locations', authenticateToken, async (req, res) => {
     return res.status(500).json({ error: 'Internal server error' });
   }
 });
-
-// Register router on both /api and root / routes for Vercel compatibility
-app.use('/api', router);
-app.use('/', router);
 
 if (!process.env.VERCEL && !process.env.NOW_BUILDER) {
   app.listen(PORT, () => {
