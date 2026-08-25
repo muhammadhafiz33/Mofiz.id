@@ -45,7 +45,33 @@ body.light-mode {
     background-color: var(--bg-primary);
     color: var(--text-primary);
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
-    @apply antialiased overflow-x-hidden transition-colors duration-500;
+    @apply antialiased overflow-x-hidden;
+  }
+
+  /* Smooth 60fps dark/light mode transitions without layout jitter */
+  body,
+  header,
+  nav,
+  main,
+  footer,
+  section,
+  div,
+  article,
+  p, h1, h2, h3, h4, h5, h6,
+  span, a, button, input, textarea {
+    transition-property: background-color, color, border-color, box-shadow;
+    transition-duration: 350ms;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Keep transform / scale / opacity animations snappy & independent */
+  .scroll-progress-bar,
+  .cursor-glow-spotlight,
+  .animate-spin,
+  .animate-pulse,
+  .floating-blur-1,
+  .floating-blur-2 {
+    transition-property: transform, opacity;
   }
 }
 

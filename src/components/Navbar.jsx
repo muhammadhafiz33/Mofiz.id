@@ -21,19 +21,16 @@ export default function Navbar() {
     const [mobileOpen, setMobileOpen] = useState(false);
 
     useEffect(() => {
-        // Sync body class with light mode state changes
-        if (isLightMode) {
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'light') {
             document.body.classList.add('light-mode');
         } else {
             document.body.classList.remove('light-mode');
         }
-    }, [isLightMode]);
 
-    useEffect(() => {
         const handleScroll = () => {
             setScrolled(window.scrollY > 30);
 
-            // Calculate active section
             const scrollPos = window.scrollY + 160;
             for (let i = 0; i < navItems.length; i++) {
                 const sec = document.getElementById(navItems[i].id);
@@ -53,16 +50,17 @@ export default function Navbar() {
     }, []);
 
     const toggleTheme = () => {
-        const isCurrentlyLight = document.body.classList.contains('light-mode');
-        if (isCurrentlyLight) {
-            document.body.classList.remove('light-mode');
-            localStorage.setItem('theme', 'dark');
-            setIsLightMode(false);
-        } else {
-            document.body.classList.add('light-mode');
-            localStorage.setItem('theme', 'light');
-            setIsLightMode(true);
-        }
+        setIsLightMode((prev) => {
+            const next = !prev;
+            if (next) {
+                document.body.classList.add('light-mode');
+                localStorage.setItem('theme', 'light');
+            } else {
+                document.body.classList.remove('light-mode');
+                localStorage.setItem('theme', 'dark');
+            }
+            return next;
+        });
     };
 
     const scrollTo = (e, id) => {
