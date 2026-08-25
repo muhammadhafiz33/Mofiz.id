@@ -50,17 +50,27 @@ export default function Navbar() {
     }, []);
 
     const toggleTheme = () => {
-        setIsLightMode((prev) => {
-            const next = !prev;
-            if (next) {
-                document.body.classList.add('light-mode');
-                localStorage.setItem('theme', 'light');
-            } else {
-                document.body.classList.remove('light-mode');
-                localStorage.setItem('theme', 'dark');
-            }
-            return next;
-        });
+        const applyTheme = () => {
+            setIsLightMode((prev) => {
+                const next = !prev;
+                if (next) {
+                    document.body.classList.add('light-mode');
+                    localStorage.setItem('theme', 'light');
+                } else {
+                    document.body.classList.remove('light-mode');
+                    localStorage.setItem('theme', 'dark');
+                }
+                return next;
+            });
+        };
+
+        if (typeof document !== 'undefined' && 'startViewTransition' in document) {
+            document.startViewTransition(() => {
+                applyTheme();
+            });
+        } else {
+            applyTheme();
+        }
     };
 
     const scrollTo = (e, id) => {

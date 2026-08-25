@@ -46,33 +46,33 @@ body.light-mode {
     color: var(--text-primary);
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
     @apply antialiased overflow-x-hidden;
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
+}
 
-  /* Smooth 60fps dark/light mode transitions without layout jitter */
-  body,
-  header,
-  nav,
-  main,
-  footer,
-  section,
-  div,
-  article,
-  p, h1, h2, h3, h4, h5, h6,
-  span, a, button, input, textarea {
-    transition-property: background-color, color, border-color, box-shadow;
-    transition-duration: 350ms;
-    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  }
+/* Hardware-accelerated 60FPS View Transitions API for Dark/Light theme crossfade */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 350ms;
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
 
-  /* Keep transform / scale / opacity animations snappy & independent */
-  .scroll-progress-bar,
-  .cursor-glow-spotlight,
-  .animate-spin,
-  .animate-pulse,
-  .floating-blur-1,
-  .floating-blur-2 {
-    transition-property: transform, opacity;
-  }
+::view-transition-old(root) {
+  animation: 350ms cubic-bezier(0.4, 0, 0.2, 1) both fade-out;
+}
+
+::view-transition-new(root) {
+  animation: 350ms cubic-bezier(0.4, 0, 0.2, 1) both fade-in;
+}
+
+@keyframes fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 /* Custom Scroll Progress Bar */
