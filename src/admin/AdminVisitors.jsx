@@ -41,20 +41,38 @@ export default function AdminVisitors() {
       }
     ];
 
+    const getMergedVisitors = (remoteList = []) => {
+      try {
+        const localLogs = JSON.parse(localStorage.getItem('hafiz_live_visitor_logs') || '[]');
+        const map = new Map();
+
+        fallbackVisitors.forEach(v => map.set(v.anonymous_session_id, v));
+        remoteList.forEach(v => {
+          if (v.anonymous_session_id) map.set(v.anonymous_session_id, v);
+        });
+        localLogs.forEach(v => {
+          if (v.anonymous_session_id) {
+            const prev = map.get(v.anonymous_session_id) || {};
+            map.set(v.anonymous_session_id, { ...prev, ...v });
+          }
+        });
+
+        return Array.from(map.values());
+      } catch (e) {
+        return remoteList.length ? remoteList : fallbackVisitors;
+      }
+    };
+
     fetch('/api/admin/visitors', {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then((res) => res.json())
       .then((data) => {
-        if (data.visitors && data.visitors.length > 0) {
-          setVisitors(data.visitors);
-        } else {
-          setVisitors(fallbackVisitors);
-        }
+        setVisitors(getMergedVisitors(data.visitors || []));
         setLoading(false);
       })
       .catch(() => {
-        setVisitors(fallbackVisitors);
+        setVisitors(getMergedVisitors([]));
         setLoading(false);
       });
   }, []);

@@ -70,20 +70,44 @@ export default function AdminMap() {
       ]
     };
 
+    const getMergedMapLocations = (data = {}) => {
+      try {
+        const localLogs = JSON.parse(localStorage.getItem('hafiz_live_visitor_logs') || '[]');
+        const ipList = [...(data.ipLocations || []), ...defaultData.ipLocations];
+        const gpsList = [...(data.gpsLocations || []), ...defaultData.gpsLocations];
+
+        localLogs.forEach(v => {
+          if (v.gps && v.gps.latitude && v.gps.longitude) {
+            gpsList.unshift({
+              anonymous_session_id: v.anonymous_session_id,
+              ip_address: v.ip_address || '180.252.164.21',
+              latitude: v.gps.latitude,
+              longitude: v.gps.longitude,
+              accuracy: v.gps.accuracy,
+              timestamp: v.gps.timestamp
+            });
+          }
+        });
+
+        return {
+          ipLocations: ipList,
+          gpsLocations: gpsList
+        };
+      } catch (e) {
+        return defaultData;
+      }
+    };
+
     fetch('/api/admin/locations', {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then((res) => res.json())
       .then((data) => {
-        if (data && (data.ipLocations?.length || data.gpsLocations?.length)) {
-          setLocations(data);
-        } else {
-          setLocations(defaultData);
-        }
+        setLocations(getMergedMapLocations(data));
         setLoading(false);
       })
       .catch(() => {
-        setLocations(defaultData);
+        setLocations(getMergedMapLocations({}));
         setLoading(false);
       });
   }, []);

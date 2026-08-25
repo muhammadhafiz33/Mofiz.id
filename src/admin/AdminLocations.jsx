@@ -39,18 +39,68 @@ export default function AdminLocations() {
       }
     ];
 
+    const getMergedLocations = (remoteIp = [], remoteGps = []) => {
+      try {
+        const localLogs = JSON.parse(localStorage.getItem('hafiz_live_visitor_logs') || '[]');
+        const ipMap = new Map();
+        const gpsMap = new Map();
+
+        defaultIpLocs.forEach(v => ipMap.set(v.anonymous_session_id, v));
+        defaultGpsLocs.forEach(v => gpsMap.set(v.anonymous_session_id, v));
+
+        remoteIp.forEach(v => { if (v.anonymous_session_id) ipMap.set(v.anonymous_session_id, v); });
+        remoteGps.forEach(v => { if (v.anonymous_session_id) gpsMap.set(v.anonymous_session_id, v); });
+
+        localLogs.forEach(v => {
+          if (v.anonymous_session_id) {
+            ipMap.set(v.anonymous_session_id, {
+              anonymous_session_id: v.anonymous_session_id,
+              ip_address: v.ip_address || '180.252.164.21',
+              country: v.country || 'Indonesia',
+              estimated_city: v.estimated_city || 'Padang',
+              isp: v.isp || 'PT Telekomunikasi Indonesia',
+              created_at: v.created_at || new Date().toISOString()
+            });
+            if (v.gps) {
+              gpsMap.set(v.anonymous_session_id, {
+                anonymous_session_id: v.anonymous_session_id,
+                ip_address: v.ip_address || '180.252.164.21',
+                latitude: v.gps.latitude,
+                longitude: v.gps.longitude,
+                accuracy: v.gps.accuracy,
+                timestamp: v.gps.timestamp,
+                location_source: 'browser_gps'
+              });
+            }
+          }
+        });
+
+        return {
+          ip: Array.from(ipMap.values()),
+          gps: Array.from(gpsMap.values())
+        };
+      } catch (e) {
+        return {
+          ip: remoteIp.length ? remoteIp : defaultIpLocs,
+          gps: remoteGps.length ? remoteGps : defaultGpsLocs
+        };
+      }
+    };
+
     fetch('/api/admin/locations', {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then((res) => res.json())
       .then((data) => {
-        setIpLocations(data.ipLocations && data.ipLocations.length > 0 ? data.ipLocations : defaultIpLocs);
-        setGpsLocations(data.gpsLocations && data.gpsLocations.length > 0 ? data.gpsLocations : defaultGpsLocs);
+        const merged = getMergedLocations(data.ipLocations || [], data.gpsLocations || []);
+        setIpLocations(merged.ip);
+        setGpsLocations(merged.gps);
         setLoading(false);
       })
       .catch(() => {
-        setIpLocations(defaultIpLocs);
-        setGpsLocations(defaultGpsLocs);
+        const merged = getMergedLocations([], []);
+        setIpLocations(merged.ip);
+        setGpsLocations(merged.gps);
         setLoading(false);
       });
   }, []);
