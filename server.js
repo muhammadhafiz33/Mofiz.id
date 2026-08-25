@@ -6,6 +6,8 @@ import crypto from 'crypto';
 import { dbService } from './api/db.js';
 
 const app = express();
+const router = express.Router();
+
 const PORT = process.env.PORT || 3001;
 const JWT_SECRET = process.env.JWT_SECRET || 'hafiz_portfolio_super_secret_jwt_key_2026';
 
@@ -15,13 +17,16 @@ const ADMIN_PASS = process.env.ADMIN_PASSWORD || 'admin123';
 const ADMIN_PASS_HASH = bcrypt.hashSync(ADMIN_PASS, 10);
 
 app.use(cors());
+app.use(express.json({ strict: false }));
 
-// Body parser middleware supporting both Vercel Serverless and local Express
+// Helper: Normalize pre-parsed or string req.body from Vercel Serverless
 app.use((req, res, next) => {
-  if (req.body && typeof req.body === 'object') {
-    return next();
+  if (typeof req.body === 'string') {
+    try {
+      req.body = JSON.parse(req.body);
+    } catch (e) {}
   }
-  express.json({ strict: false })(req, res, next);
+  next();
 });
 
 // Helper: Anonymize / Hash IP Address
@@ -57,7 +62,6 @@ function parseUserAgent(ua = '') {
 
 // Helper: IP Geolocation using Vercel Headers or ip-api.com
 async function fetchIpGeolocation(req) {
-  // Check Vercel automatic headers first
   const vercelCountry = req.headers['x-vercel-ip-country'];
   const vercelCity = req.headers['x-vercel-ip-city'];
 
@@ -72,7 +76,6 @@ async function fetchIpGeolocation(req) {
   const rawIp = req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || req.socket.remoteAddress;
   const clientIp = Array.isArray(rawIp) ? rawIp[0].split(',')[0].trim() : (rawIp || '').trim();
 
-  // If local or private IP
   if (!clientIp || clientIp === '127.0.0.1' || clientIp === '::1' || clientIp.startsWith('192.168.') || clientIp.startsWith('10.')) {
     return { country: 'Local Network', estimated_city: 'Development Mode', isp: 'Localhost' };
   }
@@ -111,13 +114,13 @@ function authenticateToken(req, res, next) {
 }
 
 // ========================
-// PUBLIC ANALYTICS ENDPOINTS
+// PUBLIC ANALYTICS ROUTER
 // ========================
 
 // 1. Visit Tracking
-app.post('/api/analytics/visit', async (req, res) => {
+router.post('/analytics/visit', async (req, res) => {
   try {
-    const { anonymous_session_id, page, referrer } = req.body;
+    const { anonymous_session_id, page, referrer } = req.body || {};
     if (!anonymous_session_id) {
       return res.status(400).json({ error: 'anonymous_session_id is required' });
     }
@@ -157,9 +160,9 @@ app.post('/api/analytics/visit', async (req, res) => {
 });
 
 // 2. Pageview Tracking
-app.post('/api/analytics/pageview', async (req, res) => {
+router.post('/analytics/pageview', async (req, res) => {
   try {
-    const { anonymous_session_id, page } = req.body;
+    const { anonymous_session_id, page } = req.body || {};
     if (!anonymous_session_id || !page) {
       return res.status(400).json({ error: 'Missing parameters' });
     }
@@ -178,9 +181,9 @@ app.post('/api/analytics/pageview', async (req, res) => {
 });
 
 // 3. Location Consent & GPS Tracking
-app.post('/api/analytics/location', async (req, res) => {
+router.post('/analytics/location', async (req, res) => {
   try {
-    const { anonymous_session_id, latitude, longitude, accuracy, timestamp, consent_status } = req.body;
+    const { anonymous_session_id, latitude, longitude, accuracy, timestamp, consent_status } = req.body || {};
     if (!anonymous_session_id) {
       return res.status(400).json({ error: 'anonymous_session_id is required' });
     }
@@ -206,14 +209,14 @@ app.post('/api/analytics/location', async (req, res) => {
 });
 
 // ========================
-// ADMIN ENDPOINTS
+// ADMIN ROUTER
 // ========================
 
 // Admin Login
-app.post('/api/admin/login', (req, res) => {
-  const { username, password } = req.body;
+router.post('/admin/login', (req, res) => {
+  const { username, password } = req.body || {};
   
-  if (username !== ADMIN_USER || !bcrypt.compareSync(password, ADMIN_PASS_HASH)) {
+  if (username !== ADMIN_USER || !bcrypt.compareSync(password || '', ADMIN_PASS_HASH)) {
     return res.status(401).json({ error: 'Invalid username or password' });
   }
 
@@ -222,12 +225,12 @@ app.post('/api/admin/login', (req, res) => {
 });
 
 // Check Auth
-app.get('/api/admin/check-auth', authenticateToken, (req, res) => {
+router.get('/admin/check-auth', authenticateToken, (req, res) => {
   return res.json({ authenticated: true, user: req.user });
 });
 
 // Admin Analytics Dashboard Stats
-app.get('/api/admin/analytics', authenticateToken, async (req, res) => {
+router.get('/admin/analytics', authenticateToken, async (req, res) => {
   try {
     const summary = await dbService.getAnalyticsSummary();
     return res.json(summary);
@@ -238,7 +241,7 @@ app.get('/api/admin/analytics', authenticateToken, async (req, res) => {
 });
 
 // Admin Visitors List
-app.get('/api/admin/visitors', authenticateToken, async (req, res) => {
+router.get('/admin/visitors', authenticateToken, async (req, res) => {
   try {
     const visitors = await dbService.getVisitorsList();
     return res.json({ visitors });
@@ -249,7 +252,7 @@ app.get('/api/admin/visitors', authenticateToken, async (req, res) => {
 });
 
 // Admin Locations (IP Geolocation vs Browser GPS)
-app.get('/api/admin/locations', authenticateToken, async (req, res) => {
+router.get('/admin/locations', authenticateToken, async (req, res) => {
   try {
     const locations = await dbService.getLocationsList();
     return res.json(locations);
@@ -258,6 +261,10 @@ app.get('/api/admin/locations', authenticateToken, async (req, res) => {
     return res.status(500).json({ error: 'Internal server error' });
   }
 });
+
+// Register router on both /api and root / routes for Vercel compatibility
+app.use('/api', router);
+app.use('/', router);
 
 if (!process.env.VERCEL && !process.env.NOW_BUILDER) {
   app.listen(PORT, () => {
