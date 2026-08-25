@@ -427,7 +427,7 @@ export const dbService = {
 
   async getLocationsList() {
     if (tursoClient) {
-      const resIp = await tursoClient.execute('SELECT id, anonymous_session_id, country, estimated_city, isp, created_at as timestamp FROM visitors WHERE country IS NOT NULL AND country != "Unknown" ORDER BY id DESC');
+      const resIp = await tursoClient.execute('SELECT id, anonymous_session_id, country, estimated_city, isp, created_at as timestamp FROM visitors ORDER BY id DESC');
       const resGps = await tursoClient.execute(`
         SELECT g.id, v.anonymous_session_id, g.latitude, g.longitude, g.accuracy, g.timestamp, g.location_source
         FROM gps_locations g
@@ -436,7 +436,7 @@ export const dbService = {
       `);
       return { ipLocations: resIp.rows, gpsLocations: resGps.rows };
     } else if (sqliteDb) {
-      const ipLocations = sqliteDb.prepare('SELECT id, anonymous_session_id, country, estimated_city, isp, created_at as timestamp FROM visitors WHERE country IS NOT NULL AND country != "Unknown" ORDER BY id DESC').all();
+      const ipLocations = sqliteDb.prepare('SELECT id, anonymous_session_id, country, estimated_city, isp, created_at as timestamp FROM visitors ORDER BY id DESC').all();
       const gpsLocations = sqliteDb.prepare(`
         SELECT g.id, v.anonymous_session_id, g.latitude, g.longitude, g.accuracy, g.timestamp, g.location_source
         FROM gps_locations g
@@ -447,10 +447,9 @@ export const dbService = {
     } else {
       fileDb.load();
       const ipLocations = fileDb.data.visitors
-        .filter(v => v.country && v.country !== 'Unknown')
         .map(v => ({
-          id: v.id, anonymous_session_id: v.anonymous_session_id, country: v.country,
-          estimated_city: v.estimated_city, isp: v.isp, timestamp: v.created_at
+          id: v.id, anonymous_session_id: v.anonymous_session_id, country: v.country || 'Unknown',
+          estimated_city: v.estimated_city || 'Unknown', isp: v.isp || 'Unknown', timestamp: v.created_at
         })).reverse();
 
       const gpsLocations = fileDb.data.gps_locations.map(g => {
