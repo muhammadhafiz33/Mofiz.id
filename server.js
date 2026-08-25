@@ -17,16 +17,18 @@ const ADMIN_PASS = process.env.ADMIN_PASSWORD || 'admin123';
 const ADMIN_PASS_HASH = bcrypt.hashSync(ADMIN_PASS, 10);
 
 app.use(cors());
-app.use(express.json({ strict: false }));
 
-// Helper: Normalize pre-parsed or string req.body from Vercel Serverless
+// Vercel-compatible Body Parser Middleware (prevents Bad Request stream errors)
 app.use((req, res, next) => {
-  if (typeof req.body === 'string') {
-    try {
-      req.body = JSON.parse(req.body);
-    } catch (e) {}
+  if (req.body !== undefined && req.body !== null) {
+    if (typeof req.body === 'string') {
+      try {
+        req.body = JSON.parse(req.body);
+      } catch (e) {}
+    }
+    return next();
   }
-  next();
+  express.json({ strict: false })(req, res, next);
 });
 
 // Helper: Anonymize / Hash IP Address
