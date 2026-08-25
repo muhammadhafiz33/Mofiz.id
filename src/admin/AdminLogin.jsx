@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Lock, User, ShieldAlert, ArrowRight, ArrowLeft } from 'lucide-react';
 
@@ -8,6 +8,26 @@ export default function AdminLogin() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const token = localStorage.getItem('hafiz_admin_token');
+    if (token) {
+      fetch('/api/admin/check-auth', {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.authenticated) {
+            navigate('/admin/dashboard', { replace: true });
+          } else {
+            localStorage.removeItem('hafiz_admin_token');
+          }
+        })
+        .catch(() => {
+          localStorage.removeItem('hafiz_admin_token');
+        });
+    }
+  }, [navigate]);
 
   const handleLogin = async (e) => {
     e.preventDefault();

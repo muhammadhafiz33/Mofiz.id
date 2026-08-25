@@ -11,7 +11,8 @@ export default function AdminLayout() {
   useEffect(() => {
     const token = localStorage.getItem('hafiz_admin_token');
     if (!token) {
-      navigate('/admin/login');
+      setLoading(false);
+      setAuthorized(false);
       return;
     }
 
@@ -24,15 +25,15 @@ export default function AdminLayout() {
           setAuthorized(true);
         } else {
           localStorage.removeItem('hafiz_admin_token');
-          navigate('/admin/login');
+          setAuthorized(false);
         }
       })
       .catch(() => {
         localStorage.removeItem('hafiz_admin_token');
-        navigate('/admin/login');
+        setAuthorized(false);
       })
       .finally(() => setLoading(false));
-  }, [navigate]);
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem('hafiz_admin_token');
@@ -49,7 +50,9 @@ export default function AdminLayout() {
     );
   }
 
-  if (!authorized) return <Navigate to="/admin/login" replace />;
+  if (!authorized) {
+    return <Navigate to="/admin/login" replace />;
+  }
 
   const navItems = [
     { path: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
