@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { motion, useScroll, useSpring } from 'framer-motion';
 
 import Navbar from './components/Navbar';
@@ -15,6 +16,14 @@ import Statistics from './components/Statistics';
 import Services from './components/Services';
 import Contact from './components/Contact';
 import Footer from './components/Footer';
+import { useVisitorTracker } from './hooks/useVisitorTracker';
+
+import AdminLogin from './admin/AdminLogin';
+import AdminLayout from './admin/AdminLayout';
+import AdminDashboard from './admin/AdminDashboard';
+import AdminVisitors from './admin/AdminVisitors';
+import AdminLocations from './admin/AdminLocations';
+import AdminMap from './admin/AdminMap';
 
 import './index.css';
 
@@ -31,7 +40,7 @@ function LoadingScreen({ onComplete }) {
         clearInterval(interval);
         setTimeout(() => {
           onComplete();
-        }, 500); // Wait a bit after hitting 100%
+        }, 500);
       }
       setProgress(currentProgress);
     }, 120);
@@ -47,21 +56,17 @@ function LoadingScreen({ onComplete }) {
       transition={{ duration: 0.8, ease: 'easeInOut' }}
     >
       <div className="flex flex-col items-center justify-center">
-        {/* Animated Rings */}
         <div className="relative w-24 h-24 mb-8 flex items-center justify-center">
-          {/* Outer rotating dashed ring */}
           <motion.div 
             className="absolute inset-0 rounded-full border-t-2 border-r-2 border-blue-500/30"
             animate={{ rotate: 360 }}
             transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
           />
-          {/* Inner rotating solid ring */}
           <motion.div 
             className="absolute inset-2 rounded-full border-b-2 border-l-2 border-blue-400"
             animate={{ rotate: -360 }}
             transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}
           />
-          {/* Center Logo */}
           <motion.div 
             className="w-12 h-12 flex items-center justify-center overflow-hidden z-10"
             initial={{ scale: 0.8, opacity: 0 }}
@@ -72,7 +77,6 @@ function LoadingScreen({ onComplete }) {
           </motion.div>
         </div>
 
-        {/* Loading Text */}
         <div className="flex flex-col items-center gap-2">
             <motion.div 
                 className="text-sm font-mono tracking-[0.2em] text-gray-400"
@@ -82,7 +86,6 @@ function LoadingScreen({ onComplete }) {
                 SYSTEM BOOTING
             </motion.div>
             
-            {/* Progress Bar */}
             <div className="w-48 h-1 bg-white/5 rounded-full mt-4 overflow-hidden relative">
                 <motion.div 
                     className="absolute top-0 left-0 h-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]"
@@ -136,7 +139,8 @@ function CursorGlow() {
   );
 }
 
-export default function App() {
+// Public Portfolio View
+function PublicPortfolio() {
   const [isLoading, setIsLoading] = useState(true);
   const { scrollYProgress } = useScroll();
   const scaleX = useSpring(scrollYProgress, {
@@ -145,7 +149,9 @@ export default function App() {
     restDelta: 0.001
   });
 
-  // Track hover spotlight variables on premium-cards
+  // Track visitor analytics automatically
+  useVisitorTracker();
+
   useEffect(() => {
     const updateCardMouseCoordinates = (e) => {
       const cards = document.querySelectorAll('.premium-card');
@@ -172,64 +178,59 @@ export default function App() {
           animate={{ opacity: 1 }}
           transition={{ duration: 0.8 }}
         >
-          {/* Scroll Progress Bar */}
           <motion.div className="scroll-progress-bar" style={{ scaleX }} />
-
-          {/* Custom Mouse Spotlight Glow */}
           <CursorGlow />
 
-          {/* Decorative Grids and Parallax blur points */}
           <div className="bg-grid-overlay"></div>
           <div className="floating-blur-1"></div>
           <div className="floating-blur-2"></div>
 
-          {/* Navigation Bar */}
           <Navbar />
 
           <main className="relative z-10 w-full">
-            {/* 1. Hero */}
             <Hero />
-            
-            {/* 2. About Me */}
             <About />
-
-            {/* 3. Journey Timeline */}
             <Journey />
-
-            {/* 4. Education */}
             <Education />
-
-            {/* 5. Technical Skills */}
             <Skills />
-
-            {/* 6. Featured Projects */}
             <Projects />
-
-            {/* 7. Certifications */}
             <Certifications />
-
-            {/* 8. Experience */}
             <Experience />
-
-
-            {/* 10. Tech Stack Icons Wall */}
             <TechStack />
-
-            {/* 11. Statistics Counter Section */}
             <Statistics />
-
-            {/* 14. Services Offered */}
             <Services />
-
-
-            {/* 16. Contact Form & Calendly CTA */}
             <Contact />
           </main>
 
-          {/* 17. Footer */}
           <Footer />
         </motion.div>
       )}
     </>
+  );
+}
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        {/* Public Portfolio Route */}
+        <Route path="/" element={<PublicPortfolio />} />
+
+        {/* Admin Login Route */}
+        <Route path="/admin/login" element={<AdminLogin />} />
+
+        {/* Admin Protected Routes */}
+        <Route path="/admin" element={<AdminLayout />}>
+          <Route index element={<Navigate to="/admin/dashboard" replace />} />
+          <Route path="dashboard" element={<AdminDashboard />} />
+          <Route path="visitors" element={<AdminVisitors />} />
+          <Route path="locations" element={<AdminLocations />} />
+          <Route path="map" element={<AdminMap />} />
+        </Route>
+
+        {/* Fallback route */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </BrowserRouter>
   );
 }

@@ -1,4 +1,7 @@
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Mail, Phone, MapPin } from 'lucide-react';
+import PrivacyModal from './PrivacyModal';
 
 const LinkedinIcon = () => (
     <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path><rect x="2" y="9" width="4" height="12"></rect><circle cx="4" cy="4" r="2"></circle></svg>
@@ -19,6 +22,9 @@ const footerNavs = [
 ];
 
 export default function Footer() {
+    const [privacyOpen, setPrivacyOpen] = useState(false);
+    const navigate = useNavigate();
+
     const scrollTo = (e, id) => {
         e.preventDefault();
         const element = document.getElementById(id);
@@ -36,82 +42,98 @@ export default function Footer() {
         }
     };
 
+    const handleFooterLogoClick = () => {
+        navigate('/admin/login');
+    };
+
     return (
-        <footer className="footer bg-gray-950/45 dark:bg-gray-950/45 border-t py-12 px-6" style={{ borderColor: 'var(--border-color)' }}>
-            <div className="max-w-6xl mx-auto grid md:grid-cols-12 gap-8 items-start text-left">
-                
-                {/* Brand Column */}
-                <div className="md:col-span-5 space-y-4">
-                    <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-lg flex items-center justify-center overflow-hidden">
-                            <img src="/logo.png" alt="Hafiz.dev Logo" className="w-full h-full object-contain" />
+        <>
+            <footer className="footer bg-gray-950/45 dark:bg-gray-950/45 border-t py-12 px-6" style={{ borderColor: 'var(--border-color)' }}>
+                <div className="max-w-6xl mx-auto grid md:grid-cols-12 gap-8 items-start text-left">
+                    
+                    {/* Brand Column */}
+                    <div className="md:col-span-5 space-y-4">
+                        <div 
+                            className="flex items-center gap-2 cursor-pointer select-none" 
+                            onClick={handleFooterLogoClick}
+                        >
+                            <div className="w-8 h-8 rounded-lg flex items-center justify-center overflow-hidden">
+                                <img src="/logo.png" alt="Hafiz.dev Logo" className="w-full h-full object-contain" />
+                            </div>
+                            <span className="text-sm font-bold text-white font-mono">Hafiz.dev</span>
                         </div>
-                        <span className="text-sm font-bold text-white font-mono">Hafiz.dev</span>
+                        <p className="text-xs text-gray-500 leading-relaxed max-w-sm">
+                            Informatics Engineering student building high-performance, responsive fullstack web environments and AI-based integrations.
+                        </p>
+                        <div className="space-y-2 pt-2 text-[11px] text-gray-400 font-mono">
+                            <div className="flex items-center gap-2">
+                                <Mail size={12} className="text-blue-500" />
+                                <span>hm2053276@gmail.com</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <Phone size={12} className="text-blue-500" />
+                                <span>+62 822-xxxx-xxxx</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <MapPin size={12} className="text-blue-500" />
+                                <span>Padang, West Sumatra, Indonesia</span>
+                            </div>
+                        </div>
                     </div>
-                    <p className="text-xs text-gray-500 leading-relaxed max-w-sm">
-                        Informatics Engineering student building high-performance, responsive fullstack web environments and AI-based integrations.
-                    </p>
-                    <div className="space-y-2 pt-2 text-[11px] text-gray-400 font-mono">
-                        <div className="flex items-center gap-2">
-                            <Mail size={12} className="text-blue-500" />
-                            <span>hm2053276@gmail.com</span>
+
+                    {/* Navigation Links Column */}
+                    <div className="md:col-span-3 space-y-4">
+                        <h4 className="text-[10px] font-mono text-gray-500 uppercase tracking-widest">LINKS</h4>
+                        <ul className="grid grid-cols-2 gap-2 text-xs">
+                            {footerNavs.map(nav => (
+                                <li key={nav.id}>
+                                    <a 
+                                        href={`#${nav.id}`} 
+                                        onClick={(e) => scrollTo(e, nav.id)}
+                                        className="text-gray-400 hover:text-blue-500 transition-colors"
+                                    >
+                                        {nav.label}
+                                    </a>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+
+                    {/* Social Profiles Column */}
+                    <div className="md:col-span-4 space-y-4">
+                        <h4 className="text-[10px] font-mono text-gray-500 uppercase tracking-widest">CONNECT</h4>
+                        <div className="flex items-center gap-3">
+                            <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" className="p-2.5 rounded-xl border hover:border-blue-500 hover:text-blue-500 transition-all duration-300" style={{ borderColor: 'var(--border-color)', backgroundColor: 'rgba(255, 255, 255, 0.01)' }}>
+                                <LinkedinIcon />
+                            </a>
+                            <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="p-2.5 rounded-xl border hover:border-blue-500 hover:text-blue-500 transition-all duration-300" style={{ borderColor: 'var(--border-color)', backgroundColor: 'rgba(255, 255, 255, 0.01)' }}>
+                                <InstagramIcon />
+                            </a>
                         </div>
-                        <div className="flex items-center gap-2">
-                            <Phone size={12} className="text-blue-500" />
-                            <span>+62 822-xxxx-xxxx</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <MapPin size={12} className="text-blue-500" />
-                            <span>Padang, West Sumatra, Indonesia</span>
+                        <div className="text-[10px] text-gray-500 leading-normal pt-2">
+                            Designed with focus on speed, typography, and clean spacing.
                         </div>
                     </div>
+
                 </div>
 
-                {/* Navigation Links Column */}
-                <div className="md:col-span-3 space-y-4">
-                    <h4 className="text-[10px] font-mono text-gray-500 uppercase tracking-widest">LINKS</h4>
-                    <ul className="grid grid-cols-2 gap-2 text-xs">
-                        {footerNavs.map(nav => (
-                            <li key={nav.id}>
-                                <a 
-                                    href={`#${nav.id}`} 
-                                    onClick={(e) => scrollTo(e, nav.id)}
-                                    className="text-gray-400 hover:text-blue-500 transition-colors"
-                                >
-                                    {nav.label}
-                                </a>
-                            </li>
-                        ))}
-                    </ul>
-                </div>
-
-                {/* Social Profiles Column */}
-                <div className="md:col-span-4 space-y-4">
-                    <h4 className="text-[10px] font-mono text-gray-500 uppercase tracking-widest">CONNECT</h4>
-                    <div className="flex items-center gap-3">
-                        <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" className="p-2.5 rounded-xl border hover:border-blue-500 hover:text-blue-500 transition-all duration-300" style={{ borderColor: 'var(--border-color)', backgroundColor: 'rgba(255, 255, 255, 0.01)' }}>
-                            <LinkedinIcon />
-                        </a>
-                        <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="p-2.5 rounded-xl border hover:border-blue-500 hover:text-blue-500 transition-all duration-300" style={{ borderColor: 'var(--border-color)', backgroundColor: 'rgba(255, 255, 255, 0.01)' }}>
-                            <InstagramIcon />
-                        </a>
-                    </div>
-                    <div className="text-[10px] text-gray-500 leading-normal pt-2">
-                        Designed with focus on speed, typography, and clean spacing.
+                {/* Bottom Row */}
+                <div className="max-w-6xl mx-auto border-t mt-12 pt-6 flex flex-col md:flex-row items-center justify-between gap-4" style={{ borderColor: 'var(--border-color)' }}>
+                    <p className="text-[11px] text-gray-500">&copy; {new Date().getFullYear()} Muhammad Hafiz. All rights reserved.</p>
+                    <div className="flex items-center gap-4 text-[10px] font-mono text-gray-500">
+                        <button 
+                            onClick={(e) => { e.preventDefault(); setPrivacyOpen(true); }}
+                            className="hover:text-white transition-colors"
+                        >
+                            Privacy Policy
+                        </button>
+                        <span>&middot;</span>
+                        <a href="#" className="hover:text-white transition-colors">Terms of Service</a>
                     </div>
                 </div>
+            </footer>
 
-            </div>
-
-            {/* Bottom Row */}
-            <div className="max-w-6xl mx-auto border-t mt-12 pt-6 flex flex-col md:flex-row items-center justify-between gap-4" style={{ borderColor: 'var(--border-color)' }}>
-                <p className="text-[11px] text-gray-500">&copy; {new Date().getFullYear()} Muhammad Hafiz. All rights reserved.</p>
-                <div className="flex items-center gap-4 text-[10px] font-mono text-gray-500">
-                    <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
-                    <span>&middot;</span>
-                    <a href="#" className="hover:text-white transition-colors">Terms of Service</a>
-                </div>
-            </div>
-        </footer>
+            <PrivacyModal isOpen={privacyOpen} onClose={() => setPrivacyOpen(false)} />
+        </>
     );
 }
