@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import { Outlet, useNavigate, useLocation, Navigate } from 'react-router-dom';
+import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Users, MapPin, Map, LogOut, Shield } from 'lucide-react';
 
-export default function AdminLayout({ children }) {
+export default function AdminLayout() {
   const [authorized, setAuthorized] = useState(false);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
@@ -11,8 +11,7 @@ export default function AdminLayout({ children }) {
   useEffect(() => {
     const token = localStorage.getItem('hafiz_admin_token');
     if (!token) {
-      setLoading(false);
-      setAuthorized(false);
+      navigate('/admin/login');
       return;
     }
 
@@ -25,15 +24,15 @@ export default function AdminLayout({ children }) {
           setAuthorized(true);
         } else {
           localStorage.removeItem('hafiz_admin_token');
-          setAuthorized(false);
+          navigate('/admin/login');
         }
       })
       .catch(() => {
         localStorage.removeItem('hafiz_admin_token');
-        setAuthorized(false);
+        navigate('/admin/login');
       })
       .finally(() => setLoading(false));
-  }, []);
+  }, [navigate]);
 
   const handleLogout = () => {
     localStorage.removeItem('hafiz_admin_token');
@@ -50,9 +49,7 @@ export default function AdminLayout({ children }) {
     );
   }
 
-  if (!authorized) {
-    return <Navigate to="/admin/login" replace />;
-  }
+  if (!authorized) return null;
 
   const navItems = [
     { path: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -63,8 +60,8 @@ export default function AdminLayout({ children }) {
 
   return (
     <div className="min-h-screen bg-gray-950 text-white font-sans flex flex-col">
-      {/* Top Admin Header */}
-      <header className="border-b bg-gray-950/80 backdrop-blur-md sticky top-0 z-40 px-6 py-4" style={{ borderColor: 'var(--border-color)' }}>
+      {/* Top Navbar */}
+      <header className="border-b bg-gray-950/80 backdrop-blur-xl sticky top-0 z-50 px-6 py-3.5" style={{ borderColor: 'var(--border-color)' }}>
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
@@ -78,8 +75,8 @@ export default function AdminLayout({ children }) {
             </div>
           </div>
 
-          {/* Nav items desktop */}
-          <nav className="hidden md:flex items-center gap-1 bg-white/5 p-1 rounded-2xl border border-white/10">
+          {/* Nav Items */}
+          <nav className="hidden md:flex items-center gap-1 bg-white/5 p-1 rounded-2xl border border-white/10 font-mono text-xs">
             {navItems.map((item) => {
               const Icon = item.icon;
               const active = location.pathname === item.path;
@@ -87,13 +84,13 @@ export default function AdminLayout({ children }) {
                 <button
                   key={item.path}
                   onClick={() => navigate(item.path)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-mono transition-all ${
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${
                     active
-                      ? 'bg-blue-600 text-white font-semibold shadow-md shadow-blue-600/20'
+                      ? 'bg-blue-600 text-white font-semibold shadow-lg shadow-blue-600/25'
                       : 'text-gray-400 hover:text-white hover:bg-white/5'
                   }`}
                 >
-                  <Icon size={14} />
+                  <Icon size={15} />
                   <span>{item.label}</span>
                 </button>
               );
@@ -103,13 +100,13 @@ export default function AdminLayout({ children }) {
           <div className="flex items-center gap-3">
             <button
               onClick={() => navigate('/')}
-              className="text-xs font-mono text-gray-400 hover:text-white px-3 py-1.5 rounded-xl border border-white/10 hover:border-white/20 transition-all hidden sm:inline-block"
+              className="text-xs font-mono text-gray-400 hover:text-white px-3 py-1.5 rounded-xl border border-white/10 hover:border-white/20 transition-all hidden sm:inline-block cursor-pointer"
             >
               Public Site
             </button>
             <button
               onClick={handleLogout}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-red-500/20 bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-mono transition-all"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-red-500/20 bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-mono transition-all cursor-pointer"
             >
               <LogOut size={13} />
               <span>Logout</span>
@@ -140,7 +137,7 @@ export default function AdminLayout({ children }) {
 
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-6">
-        {children || <Outlet />}
+        <Outlet />
       </main>
     </div>
   );

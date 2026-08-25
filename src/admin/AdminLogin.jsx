@@ -17,10 +17,7 @@ export default function AdminLogin() {
     try {
       const res = await fetch('/api/admin/login', {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password })
       });
 
@@ -42,63 +39,68 @@ export default function AdminLogin() {
   };
 
   return (
-    <div style={{ backgroundColor: '#0B0F19', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', color: '#ffffff' }}>
-      <div style={{ maxWidth: '28rem', width: '100%', position: 'relative', zIndex: 10 }}>
+    <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center p-6 relative overflow-hidden font-sans">
+      {/* Glow overlays */}
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-96 h-96 bg-blue-600/15 blur-[120px] rounded-full pointer-events-none" />
+
+      <div className="max-w-md w-full relative z-10">
         {/* Back to Home Button */}
         <button
           onClick={() => navigate('/')}
-          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem', fontFamily: 'monospace', color: '#9CA3AF', marginBottom: '2rem', cursor: 'pointer', background: 'none', border: 'none' }}
+          className="inline-flex items-center gap-2 text-xs font-mono text-gray-400 hover:text-white mb-8 transition-colors group cursor-pointer"
         >
-          <ArrowLeft size={14} />
+          <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" />
           Back to Portfolio
         </button>
 
-        <div style={{ borderRadius: '1.5rem', border: '1px solid rgba(255, 255, 255, 0.15)', backgroundColor: '#111827', padding: '2rem', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}>
+        <div className="rounded-3xl border bg-gray-950/80 backdrop-blur-2xl p-8 shadow-2xl" style={{ borderColor: 'var(--border-color)' }}>
           {/* Header Branding */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', marginBottom: '2rem' }}>
-            <div style={{ width: '3rem', height: '3rem', borderRadius: '1rem', backgroundColor: 'rgba(59, 130, 246, 0.1)', border: '1px solid rgba(59, 130, 246, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#60A5FA', marginBottom: '0.75rem' }}>
+          <div className="flex flex-col items-center text-center space-y-3 mb-8">
+            <div className="w-12 h-12 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 shadow-lg shadow-blue-500/10">
               <Lock size={22} />
             </div>
             <div>
-              <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', fontFamily: 'monospace', color: '#ffffff', margin: 0 }}>Admin Authentication</h2>
-              <p style={{ fontSize: '0.75rem', color: '#9CA3AF', fontFamily: 'monospace', marginTop: '0.25rem', margin: 0 }}>Hafiz.id Control Panel Access</p>
+              <h2 className="text-xl font-bold font-mono tracking-tight text-white">Admin Authentication</h2>
+              <p className="text-xs text-gray-400 font-mono mt-1">Hafiz.id Control Panel Access</p>
             </div>
           </div>
 
           {error && (
-            <div style={{ marginBottom: '1.5rem', padding: '0.875rem', borderRadius: '0.75rem', backgroundColor: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', color: '#F87171', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontFamily: 'monospace' }}>
-              <ShieldAlert size={16} style={{ flexShrink: 0 }} />
+            <div className="mb-6 p-3.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs flex items-center gap-2 font-mono">
+              <ShieldAlert size={16} className="shrink-0" />
               <span>{error}</span>
             </div>
           )}
 
-          <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          <form onSubmit={handleLogin} className="space-y-5">
             <div>
-              <label style={{ display: 'block', fontSize: '0.6875rem', fontFamily: 'monospace', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.5rem' }}>Username / Email</label>
-              <div style={{ position: 'relative' }}>
-                <User size={16} style={{ position: 'absolute', left: '0.875rem', top: '50%', transform: 'translateY(-50%)', color: '#6B7280' }} />
+              <label className="block text-[11px] font-mono text-gray-400 uppercase tracking-widest mb-2">Username / Email</label>
+              <div className="relative">
+                <User size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
                 <input
                   type="text"
                   required
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   placeholder="Enter admin username"
-                  style={{ width: '100%', backgroundColor: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.15)', borderRadius: '0.75rem', padding: '0.625rem 1rem 0.625rem 2.5rem', fontSize: '0.75rem', color: '#ffffff', outline: 'none', fontFamily: 'monospace', boxSizing: 'border-box' }}
+                  className="w-full bg-white/5 border rounded-xl py-2.5 pl-10 pr-4 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 transition-colors font-mono"
+                  style={{ borderColor: 'var(--border-color)' }}
                 />
               </div>
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '0.6875rem', fontFamily: 'monospace', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.5rem' }}>Password</label>
-              <div style={{ position: 'relative' }}>
-                <Lock size={16} style={{ position: 'absolute', left: '0.875rem', top: '50%', transform: 'translateY(-50%)', color: '#6B7280' }} />
+              <label className="block text-[11px] font-mono text-gray-400 uppercase tracking-widest mb-2">Password</label>
+              <div className="relative">
+                <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
                 <input
                   type="password"
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter password"
-                  style={{ width: '100%', backgroundColor: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.15)', borderRadius: '0.75rem', padding: '0.625rem 1rem 0.625rem 2.5rem', fontSize: '0.75rem', color: '#ffffff', outline: 'none', fontFamily: 'monospace', boxSizing: 'border-box' }}
+                  className="w-full bg-white/5 border rounded-xl py-2.5 pl-10 pr-4 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 transition-colors font-mono"
+                  style={{ borderColor: 'var(--border-color)' }}
                 />
               </div>
             </div>
@@ -106,7 +108,7 @@ export default function AdminLogin() {
             <button
               type="submit"
               disabled={loading}
-              style={{ width: '100%', padding: '0.75rem', borderRadius: '0.75rem', backgroundColor: '#2563EB', color: '#ffffff', fontWeight: 'bold', fontSize: '0.75rem', fontFamily: 'monospace', letterSpacing: '0.05em', textTransform: 'uppercase', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', marginTop: '0.5rem', opacity: loading ? 0.6 : 1 }}
+              className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs font-mono tracking-wider uppercase transition-all duration-200 shadow-lg shadow-blue-600/25 flex items-center justify-center gap-2 active:scale-98 disabled:opacity-50 mt-2 cursor-pointer"
             >
               <span>{loading ? 'Authenticating...' : 'Sign In'}</span>
               {!loading && <ArrowRight size={14} />}
