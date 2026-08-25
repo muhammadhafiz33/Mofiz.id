@@ -17,21 +17,25 @@ export default function AdminLogin() {
     try {
       const res = await fetch('/api/admin/login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
         body: JSON.stringify({ username, password })
       });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
 
       if (res.ok && data.token) {
         localStorage.setItem('hafiz_admin_token', data.token);
         localStorage.setItem('hafiz_admin_user', data.username);
         navigate('/admin/dashboard');
       } else {
-        setError(data.error || 'Login failed. Please check credentials.');
+        setError(data.error || 'Invalid username or password.');
       }
     } catch (err) {
-      setError('Network error. Unable to connect to server.');
+      console.error('Login request error:', err);
+      setError('Network connection failed. Please try again.');
     } finally {
       setLoading(false);
     }
