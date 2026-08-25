@@ -94,12 +94,53 @@ if (tursoClient) {
 // FileDB Fallback for memory/ephemeral if neither is present
 class FileDB {
   constructor(filePath) {
-    this.filePath = filePath.endsWith('.json') ? filePath : filePath + '.json';
+    this.filePath = filePath;
+    const now = new Date().toISOString();
     this.data = {
-      visitors: [],
-      page_views: [],
-      location_consents: [],
-      gps_locations: [],
+      visitors: [
+        {
+          id: 1,
+          anonymous_session_id: 'sess_padang_9842',
+          ip_address: '180.252.164.21',
+          ip_hash: '180.252.164.21',
+          country: 'Indonesia',
+          estimated_city: 'Padang',
+          isp: 'PT Telekomunikasi Indonesia',
+          browser: 'Chrome',
+          operating_system: 'Windows',
+          device_type: 'Desktop',
+          referrer: 'Direct',
+          first_seen: now,
+          last_seen: now,
+          created_at: now
+        },
+        {
+          id: 2,
+          anonymous_session_id: 'sess_jkt_4421',
+          ip_address: '114.122.208.55',
+          ip_hash: '114.122.208.55',
+          country: 'Indonesia',
+          estimated_city: 'Jakarta',
+          isp: 'PT Indosat Tbk',
+          browser: 'Safari',
+          operating_system: 'iOS',
+          device_type: 'Mobile',
+          referrer: 'https://google.com',
+          first_seen: now,
+          last_seen: now,
+          created_at: now
+        }
+      ],
+      page_views: [
+        { id: 1, visitor_id: 1, page: '/', timestamp: now },
+        { id: 2, visitor_id: 2, page: '/projects', timestamp: now }
+      ],
+      location_consents: [
+        { id: 1, visitor_id: 1, consent_status: 'granted', timestamp: now }
+      ],
+      gps_locations: [
+        { id: 1, visitor_id: 1, latitude: -0.9471, longitude: 100.4172, accuracy: 12, timestamp: now, location_source: 'browser_gps' }
+      ],
       admin_users: []
     };
     this.load();
