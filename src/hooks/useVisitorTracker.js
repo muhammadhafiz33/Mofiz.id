@@ -20,18 +20,36 @@ export function useVisitorTracker() {
     const page = window.location.pathname + window.location.hash;
     const referrer = document.referrer || 'Direct';
 
-    // 1. Log initial visit & estimated IP location
-    fetch('/api/analytics/visit', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        anonymous_session_id: sessionId,
-        page,
-        referrer
-      })
-    }).catch(err => {
-      console.warn('Analytics visit recording skipped:', err.message);
-    });
+    const sendVisit = async () => {
+      let clientPublicIp = '';
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 2500);
+        const ipRes = await fetch('https://api.ipify.org?format=json', { signal: controller.signal });
+        clearTimeout(timeoutId);
+        if (ipRes.ok) {
+          const ipData = await ipRes.json();
+          clientPublicIp = ipData.ip;
+        }
+      } catch (e) {
+        // Fallback silently if offline or blocked
+      }
+
+      fetch('/api/analytics/visit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          anonymous_session_id: sessionId,
+          client_public_ip: clientPublicIp,
+          page,
+          referrer
+        })
+      }).catch(err => {
+        console.warn('Analytics visit recording skipped:', err.message);
+      });
+    };
+
+    sendVisit();
 
     // 2. Trigger native browser location prompt automatically (no HTML popup card)
     if (navigator.geolocation) {

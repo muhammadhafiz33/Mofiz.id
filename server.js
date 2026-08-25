@@ -72,45 +72,53 @@ function parseUserAgent(ua = '') {
   return { browser, os, device };
 }
 
-// Helper: IP Geolocation using Vercel Headers or ip-api.com
-async function fetchIpGeolocation(req) {
+// Helper: IP Geolocation using client_public_ip, Vercel Headers or ip-api.com
+async function fetchIpGeolocation(req, clientPublicIp = '') {
+  let targetIp = clientPublicIp;
+
+  if (!targetIp || targetIp === '127.0.0.1' || targetIp === '::1' || targetIp.includes('Localhost')) {
+    const rawIp = req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || req.socket?.remoteAddress;
+    targetIp = Array.isArray(rawIp) ? rawIp[0].split(',')[0].trim() : (rawIp || '').trim();
+    targetIp = targetIp.replace(/^::ffff:/, '');
+  }
+
+  if (targetIp && targetIp !== '127.0.0.1' && targetIp !== '::1' && !targetIp.startsWith('192.168.') && !targetIp.startsWith('10.')) {
+    try {
+      const res = await fetch(`http://ip-api.com/json/${targetIp}?fields=status,country,city,isp,query`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.status === 'success') {
+          return {
+            ip: data.query || targetIp,
+            country: data.country || 'Unknown',
+            estimated_city: data.city || 'Unknown',
+            isp: data.isp || 'Provider Network'
+          };
+        }
+      }
+    } catch (e) {
+      console.warn('[Geolocation] ip-api lookup failed:', e.message);
+    }
+  }
+
   const vercelCountry = req.headers['x-vercel-ip-country'];
   const vercelCity = req.headers['x-vercel-ip-city'];
 
   if (vercelCountry || vercelCity) {
     return {
-      country: vercelCountry || 'Unknown',
-      estimated_city: vercelCity ? decodeURIComponent(vercelCity) : 'Unknown',
-      isp: 'Vercel Network'
+      ip: targetIp || 'Unknown IP',
+      country: vercelCountry || 'Indonesia',
+      estimated_city: vercelCity ? decodeURIComponent(vercelCity) : 'Padang',
+      isp: 'Vercel Provider Network'
     };
   }
 
-  const rawIp = req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || req.socket.remoteAddress;
-  const clientIp = Array.isArray(rawIp) ? rawIp[0].split(',')[0].trim() : (rawIp || '').trim();
-
-  if (!clientIp || clientIp === '127.0.0.1' || clientIp === '::1' || clientIp.startsWith('192.168.') || clientIp.startsWith('10.')) {
-    return { country: 'Local Network', estimated_city: 'Development Mode', isp: 'Localhost' };
-  }
-
-  try {
-    const res = await fetch(`http://ip-api.com/json/${clientIp}?fields=status,country,city,isp`);
-    if (res.ok) {
-      const data = await res.json();
-      if (data && data.status === 'success') {
-        return {
-          country: data.country || 'Unknown',
-          estimated_city: data.city || 'Unknown',
-          isp: data.isp || 'Unknown'
-        };
-      }
-    }
-  } catch (err) {
-    console.error('IP Geolocation error:', err.message);
-  }
-
-  return { country: 'Unknown', estimated_city: 'Unknown', isp: 'Unknown' };
-}
-
+  return {
+    ip: targetIp || '127.0.0.1',
+    country: 'Indonesia',
+    estimated_city: 'Padang',
+    isp: 'Localhost Network'
+  };
 // Middleware: Authenticate Admin JWT
 function authenticateToken(req, res, next) {
   const authHeader = req.headers['authorization'];
@@ -132,7 +140,7 @@ function authenticateToken(req, res, next) {
 // 1. Visit Tracking
 app.post(['/api/analytics/visit', '/analytics/visit'], async (req, res) => {
   try {
-    const { anonymous_session_id, page, referrer } = req.body || {};
+    const { anonymous_session_id, client_public_ip, page, referrer } = req.body || {};
     if (!anonymous_session_id) {
       return res.status(400).json({ error: 'anonymous_session_id is required' });
     }
@@ -140,17 +148,19 @@ app.post(['/api/analytics/visit', '/analytics/visit'], async (req, res) => {
     const userAgent = req.headers['user-agent'] || '';
     const { browser, os, device } = parseUserAgent(userAgent);
     const ipHash = getAnonymizedIp(req);
-    const clientIp = getClientIp(req);
+    
+    // Perform geolocation & ISP lookup using client_public_ip if provided
+    const geo = await fetchIpGeolocation(req, client_public_ip);
+    const resolvedIp = client_public_ip || geo.ip || getClientIp(req);
 
     let visitor = await dbService.getVisitorBySession(anonymous_session_id);
 
     if (visitor) {
       await dbService.updateVisitorLastSeen(visitor.id);
     } else {
-      const geo = await fetchIpGeolocation(req);
       visitor = await dbService.createVisitor({
         anonymous_session_id,
-        ip_address: clientIp,
+        ip_address: resolvedIp,
         ip_hash: ipHash,
         country: geo.country,
         estimated_city: geo.estimated_city,
