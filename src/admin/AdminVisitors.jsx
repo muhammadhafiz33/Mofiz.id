@@ -27,6 +27,7 @@ export default function AdminVisitors() {
     const query = search.toLowerCase();
     return (
       (v.anonymous_session_id || '').toLowerCase().includes(query) ||
+      (v.ip_address || '').toLowerCase().includes(query) ||
       (v.country || '').toLowerCase().includes(query) ||
       (v.estimated_city || '').toLowerCase().includes(query) ||
       (v.browser || '').toLowerCase().includes(query) ||
@@ -56,7 +57,7 @@ export default function AdminVisitors() {
           <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
           <input
             type="text"
-            placeholder="Search session, city, device..."
+            placeholder="Search IP, session, city..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full bg-white/5 border rounded-xl py-2 pl-9 pr-4 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 font-mono transition-colors"
@@ -72,6 +73,7 @@ export default function AdminVisitors() {
             <thead>
               <tr className="border-b border-white/10 text-gray-400 uppercase text-[10px]">
                 <th className="py-3 px-3">Timestamp</th>
+                <th className="py-3 px-3">IP Address</th>
                 <th className="py-3 px-3">Session ID</th>
                 <th className="py-3 px-3">Country</th>
                 <th className="py-3 px-3">Estimated City</th>
@@ -86,7 +88,7 @@ export default function AdminVisitors() {
             <tbody className="divide-y divide-white/5">
               {filteredVisitors.length === 0 ? (
                 <tr>
-                  <td colSpan="10" className="py-6 text-center text-gray-500">No visitor records matching query.</td>
+                  <td colSpan="11" className="py-6 text-center text-gray-500">No visitor records matching query.</td>
                 </tr>
               ) : (
                 filteredVisitors.map((v) => (
@@ -95,6 +97,7 @@ export default function AdminVisitors() {
                       {new Date(v.created_at).toLocaleDateString()}{' '}
                       <span className="text-gray-400">{new Date(v.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                     </td>
+                    <td className="py-3 px-3 font-semibold text-emerald-400 whitespace-nowrap font-mono">{v.ip_address || '127.0.0.1'}</td>
                     <td className="py-3 px-3 text-blue-400 font-semibold">{v.anonymous_session_id}</td>
                     <td className="py-3 px-3 text-white whitespace-nowrap">{v.country}</td>
                     <td className="py-3 px-3 text-gray-300 whitespace-nowrap">{v.estimated_city}</td>
@@ -152,7 +155,11 @@ export default function AdminVisitors() {
               </div>
               <div>
                 <h3 className="text-base font-bold text-white font-mono">Visitor Session Detail</h3>
-                <p className="text-xs text-blue-400 font-mono font-semibold">{selectedVisitor.anonymous_session_id}</p>
+                <div className="flex items-center gap-2 mt-0.5 font-mono text-xs">
+                  <span className="text-emerald-400 font-semibold">{selectedVisitor.ip_address || '127.0.0.1'}</span>
+                  <span className="text-gray-600">•</span>
+                  <span className="text-blue-400 font-semibold">{selectedVisitor.anonymous_session_id}</span>
+                </div>
               </div>
             </div>
 

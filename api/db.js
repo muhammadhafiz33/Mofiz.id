@@ -36,6 +36,7 @@ const INIT_SQL = `
   CREATE TABLE IF NOT EXISTS visitors (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     anonymous_session_id TEXT UNIQUE,
+    ip_address TEXT,
     ip_hash TEXT,
     country TEXT,
     estimated_city TEXT,
@@ -81,11 +82,13 @@ const INIT_SQL = `
 `;
 
 if (sqliteDb) {
-  try { sqliteDb.exec(INIT_SQL); } catch (err) { console.error('SQLite init error:', err); }
+  try { sqliteDb.exec(INIT_SQL); } catch (err) {}
+  try { sqliteDb.exec('ALTER TABLE visitors ADD COLUMN ip_address TEXT;'); } catch (err) {}
 }
 
 if (tursoClient) {
-  tursoClient.executeMultiple(INIT_SQL).catch(err => console.error('Turso init error:', err));
+  tursoClient.executeMultiple(INIT_SQL).catch(() => {});
+  tursoClient.execute('ALTER TABLE visitors ADD COLUMN ip_address TEXT;').catch(() => {});
 }
 
 // FileDB Fallback for memory/ephemeral if neither is present
@@ -147,35 +150,37 @@ export const dbService = {
 
   async createVisitor(v) {
     const now = new Date().toISOString();
+    const ipAddr = v.ip_address || v.ip_hash || '127.0.0.1';
     if (tursoClient) {
       const res = await tursoClient.execute({
-        sql: `INSERT INTO visitors (anonymous_session_id, ip_hash, country, estimated_city, isp, browser, operating_system, device_type, referrer, first_seen, last_seen, created_at)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
+        sql: `INSERT INTO visitors (anonymous_session_id, ip_address, ip_hash, country, estimated_city, isp, browser, operating_system, device_type, referrer, first_seen, last_seen, created_at)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
         args: [
-          v.anonymous_session_id, v.ip_hash || '', v.country || 'Unknown', v.estimated_city || 'Unknown',
+          v.anonymous_session_id, ipAddr, v.ip_hash || '', v.country || 'Unknown', v.estimated_city || 'Unknown',
           v.isp || 'Unknown', v.browser || 'Unknown', v.operating_system || 'Unknown', v.device_type || 'Desktop',
           v.referrer || 'Direct', now, now, now
         ]
       });
       const id = res.rows.length ? Number(res.rows[0].id) : Date.now();
-      return { id, ...v, first_seen: now, last_seen: now };
+      return { id, ...v, ip_address: ipAddr, first_seen: now, last_seen: now };
     } else if (sqliteDb) {
       const stmt = sqliteDb.prepare(`
-        INSERT INTO visitors (anonymous_session_id, ip_hash, country, estimated_city, isp, browser, operating_system, device_type, referrer, first_seen, last_seen, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO visitors (anonymous_session_id, ip_address, ip_hash, country, estimated_city, isp, browser, operating_system, device_type, referrer, first_seen, last_seen, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `);
       const info = stmt.run(
-        v.anonymous_session_id, v.ip_hash || '', v.country || 'Unknown', v.estimated_city || 'Unknown',
+        v.anonymous_session_id, ipAddr, v.ip_hash || '', v.country || 'Unknown', v.estimated_city || 'Unknown',
         v.isp || 'Unknown', v.browser || 'Unknown', v.operating_system || 'Unknown', v.device_type || 'Desktop',
         v.referrer || 'Direct', now, now, now
       );
-      return { id: info.lastInsertRowid, ...v, first_seen: now, last_seen: now };
+      return { id: info.lastInsertRowid, ...v, ip_address: ipAddr, first_seen: now, last_seen: now };
     } else {
       fileDb.load();
       const id = fileDb.data.visitors.length + 1;
       const newVisitor = {
         id,
         anonymous_session_id: v.anonymous_session_id,
+        ip_address: ipAddr,
         ip_hash: v.ip_hash || '',
         country: v.country || 'Unknown',
         estimated_city: v.estimated_city || 'Unknown',
@@ -427,18 +432,18 @@ export const dbService = {
 
   async getLocationsList() {
     if (tursoClient) {
-      const resIp = await tursoClient.execute('SELECT id, anonymous_session_id, country, estimated_city, isp, created_at as timestamp FROM visitors ORDER BY id DESC');
+      const resIp = await tursoClient.execute('SELECT id, anonymous_session_id, ip_address, country, estimated_city, isp, created_at as timestamp FROM visitors ORDER BY id DESC');
       const resGps = await tursoClient.execute(`
-        SELECT g.id, v.anonymous_session_id, g.latitude, g.longitude, g.accuracy, g.timestamp, g.location_source
+        SELECT g.id, v.anonymous_session_id, v.ip_address, g.latitude, g.longitude, g.accuracy, g.timestamp, g.location_source
         FROM gps_locations g
         JOIN visitors v ON g.visitor_id = v.id
         ORDER BY g.id DESC
       `);
       return { ipLocations: resIp.rows, gpsLocations: resGps.rows };
     } else if (sqliteDb) {
-      const ipLocations = sqliteDb.prepare('SELECT id, anonymous_session_id, country, estimated_city, isp, created_at as timestamp FROM visitors ORDER BY id DESC').all();
+      const ipLocations = sqliteDb.prepare('SELECT id, anonymous_session_id, ip_address, country, estimated_city, isp, created_at as timestamp FROM visitors ORDER BY id DESC').all();
       const gpsLocations = sqliteDb.prepare(`
-        SELECT g.id, v.anonymous_session_id, g.latitude, g.longitude, g.accuracy, g.timestamp, g.location_source
+        SELECT g.id, v.anonymous_session_id, v.ip_address, g.latitude, g.longitude, g.accuracy, g.timestamp, g.location_source
         FROM gps_locations g
         JOIN visitors v ON g.visitor_id = v.id
         ORDER BY g.id DESC
@@ -448,14 +453,14 @@ export const dbService = {
       fileDb.load();
       const ipLocations = fileDb.data.visitors
         .map(v => ({
-          id: v.id, anonymous_session_id: v.anonymous_session_id, country: v.country || 'Unknown',
+          id: v.id, anonymous_session_id: v.anonymous_session_id, ip_address: v.ip_address || 'Unknown', country: v.country || 'Unknown',
           estimated_city: v.estimated_city || 'Unknown', isp: v.isp || 'Unknown', timestamp: v.created_at
         })).reverse();
 
       const gpsLocations = fileDb.data.gps_locations.map(g => {
         const v = fileDb.data.visitors.find(vis => vis.id === g.visitor_id) || {};
         return {
-          id: g.id, anonymous_session_id: v.anonymous_session_id || 'Unknown',
+          id: g.id, anonymous_session_id: v.anonymous_session_id || 'Unknown', ip_address: v.ip_address || 'Unknown',
           latitude: g.latitude, longitude: g.longitude, accuracy: g.accuracy,
           timestamp: g.timestamp, location_source: g.location_source || 'browser_gps'
         };

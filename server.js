@@ -30,6 +30,17 @@ app.use((req, res, next) => {
   express.json({ strict: false })(req, res, next);
 });
 
+// Helper: Extract Real Client IP Address
+function getClientIp(req) {
+  const rawIp = req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || req.socket?.remoteAddress || '127.0.0.1';
+  const ipStr = Array.isArray(rawIp) ? rawIp[0] : rawIp;
+  const cleanIp = ipStr.split(',')[0].trim().replace(/^::ffff:/, '');
+  if (!cleanIp || cleanIp === '::1' || cleanIp === '127.0.0.1') {
+    return '127.0.0.1 (Localhost)';
+  }
+  return cleanIp;
+}
+
 // Helper: Anonymize / Hash IP Address
 function getAnonymizedIp(req) {
   const rawIp = req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || req.socket.remoteAddress || '127.0.0.1';
@@ -129,6 +140,7 @@ app.post(['/api/analytics/visit', '/analytics/visit'], async (req, res) => {
     const userAgent = req.headers['user-agent'] || '';
     const { browser, os, device } = parseUserAgent(userAgent);
     const ipHash = getAnonymizedIp(req);
+    const clientIp = getClientIp(req);
 
     let visitor = await dbService.getVisitorBySession(anonymous_session_id);
 
@@ -138,6 +150,7 @@ app.post(['/api/analytics/visit', '/analytics/visit'], async (req, res) => {
       const geo = await fetchIpGeolocation(req);
       visitor = await dbService.createVisitor({
         anonymous_session_id,
+        ip_address: clientIp,
         ip_hash: ipHash,
         country: geo.country,
         estimated_city: geo.estimated_city,

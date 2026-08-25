@@ -115,6 +115,7 @@ export default function AdminMap() {
                     <div className="font-bold text-blue-600 flex items-center gap-1">
                       <MapPin size={13} /> Estimated IP Location
                     </div>
+                    <div className="text-gray-700 font-semibold text-emerald-700">IP: {ipLoc.ip_address || '127.0.0.1'}</div>
                     <div className="text-gray-700">Session: {ipLoc.anonymous_session_id}</div>
                     <div className="text-gray-700">Country: {ipLoc.country}</div>
                     <div className="text-gray-700">Estimated City: {ipLoc.estimated_city}</div>
@@ -145,6 +146,7 @@ export default function AdminMap() {
                       <div className="font-bold text-emerald-600 flex items-center gap-1">
                         <Navigation size={13} /> Browser GPS Location
                       </div>
+                      <div className="text-gray-700 font-semibold text-emerald-700">IP: {gpsLoc.ip_address || '127.0.0.1'}</div>
                       <div className="text-gray-700">Session: {gpsLoc.anonymous_session_id}</div>
                       <div className="text-gray-700">Lat: {lat.toFixed(6)}</div>
                       <div className="text-gray-700">Lng: {lng.toFixed(6)}</div>

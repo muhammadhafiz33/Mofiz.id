@@ -62,6 +62,7 @@ export default function AdminLocations() {
             <thead>
               <tr className="border-b border-white/10 text-gray-400 uppercase text-[10px]">
                 <th className="py-3 px-3">Session ID</th>
+                <th className="py-3 px-3">IP Address</th>
                 <th className="py-3 px-3">Country</th>
                 <th className="py-3 px-3">Estimated City</th>
                 <th className="py-3 px-3">ISP</th>
@@ -72,12 +73,13 @@ export default function AdminLocations() {
             <tbody className="divide-y divide-white/5">
               {ipLocations.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="py-4 text-center text-gray-500">No estimated IP locations recorded yet.</td>
+                  <td colSpan="7" className="py-4 text-center text-gray-500">No estimated IP locations recorded yet.</td>
                 </tr>
               ) : (
                 ipLocations.map((loc) => (
                   <tr key={loc.id} className="hover:bg-white/5 transition-colors">
                     <td className="py-3 px-3 text-blue-400 font-semibold">{loc.anonymous_session_id}</td>
+                    <td className="py-3 px-3 text-emerald-400 font-mono font-semibold">{loc.ip_address || '127.0.0.1'}</td>
                     <td className="py-3 px-3 text-white">{loc.country}</td>
                     <td className="py-3 px-3 text-gray-300">{loc.estimated_city}</td>
                     <td className="py-3 px-3 text-gray-400">{loc.isp}</td>
@@ -123,6 +125,7 @@ export default function AdminLocations() {
             <thead>
               <tr className="border-b border-white/10 text-gray-400 uppercase text-[10px]">
                 <th className="py-3 px-3">Session ID</th>
+                <th className="py-3 px-3">IP Address</th>
                 <th className="py-3 px-3">Latitude</th>
                 <th className="py-3 px-3">Longitude</th>
                 <th className="py-3 px-3">Accuracy (m)</th>
@@ -134,12 +137,13 @@ export default function AdminLocations() {
             <tbody className="divide-y divide-white/5">
               {gpsLocations.length === 0 ? (
                 <tr>
-                  <td colSpan="7" className="py-4 text-center text-gray-500">No Browser GPS locations permission granted yet.</td>
+                  <td colSpan="8" className="py-4 text-center text-gray-500">No Browser GPS locations permission granted yet.</td>
                 </tr>
               ) : (
                 gpsLocations.map((loc) => (
                   <tr key={loc.id} className="hover:bg-white/5 transition-colors">
                     <td className="py-3 px-3 text-emerald-400 font-semibold">{loc.anonymous_session_id}</td>
+                    <td className="py-3 px-3 text-emerald-400 font-mono font-semibold">{loc.ip_address || '127.0.0.1'}</td>
                     <td className="py-3 px-3 text-white font-mono">{Number(loc.latitude).toFixed(6)}</td>
                     <td className="py-3 px-3 text-white font-mono">{Number(loc.longitude).toFixed(6)}</td>
                     <td className="py-3 px-3 text-gray-300">±{Math.round(loc.accuracy || 0)}m</td>
