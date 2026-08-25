@@ -119,13 +119,13 @@ app.post('/api/analytics/visit', async (req, res) => {
     const { browser, os, device } = parseUserAgent(userAgent);
     const ipHash = getAnonymizedIp(req);
 
-    let visitor = dbService.getVisitorBySession(anonymous_session_id);
+    let visitor = await dbService.getVisitorBySession(anonymous_session_id);
 
     if (visitor) {
-      dbService.updateVisitorLastSeen(visitor.id);
+      await dbService.updateVisitorLastSeen(visitor.id);
     } else {
       const geo = await fetchIpGeolocation(req);
-      visitor = dbService.createVisitor({
+      visitor = await dbService.createVisitor({
         anonymous_session_id,
         ip_hash: ipHash,
         country: geo.country,
@@ -139,7 +139,7 @@ app.post('/api/analytics/visit', async (req, res) => {
     }
 
     if (page) {
-      dbService.recordPageView(visitor.id, page);
+      await dbService.recordPageView(visitor.id, page);
     }
 
     return res.json({ success: true, visitorId: visitor.id });
@@ -150,17 +150,17 @@ app.post('/api/analytics/visit', async (req, res) => {
 });
 
 // 2. Pageview Tracking
-app.post('/api/analytics/pageview', (req, res) => {
+app.post('/api/analytics/pageview', async (req, res) => {
   try {
     const { anonymous_session_id, page } = req.body;
     if (!anonymous_session_id || !page) {
       return res.status(400).json({ error: 'Missing parameters' });
     }
 
-    const visitor = dbService.getVisitorBySession(anonymous_session_id);
+    const visitor = await dbService.getVisitorBySession(anonymous_session_id);
     if (visitor) {
-      dbService.recordPageView(visitor.id, page);
-      dbService.updateVisitorLastSeen(visitor.id);
+      await dbService.recordPageView(visitor.id, page);
+      await dbService.updateVisitorLastSeen(visitor.id);
     }
 
     return res.json({ success: true });
@@ -171,24 +171,24 @@ app.post('/api/analytics/pageview', (req, res) => {
 });
 
 // 3. Location Consent & GPS Tracking
-app.post('/api/analytics/location', (req, res) => {
+app.post('/api/analytics/location', async (req, res) => {
   try {
     const { anonymous_session_id, latitude, longitude, accuracy, timestamp, consent_status } = req.body;
     if (!anonymous_session_id) {
       return res.status(400).json({ error: 'anonymous_session_id is required' });
     }
 
-    const visitor = dbService.getVisitorBySession(anonymous_session_id);
+    const visitor = await dbService.getVisitorBySession(anonymous_session_id);
     if (!visitor) {
       return res.status(404).json({ error: 'Visitor not found' });
     }
 
     if (consent_status) {
-      dbService.recordConsent(visitor.id, consent_status);
+      await dbService.recordConsent(visitor.id, consent_status);
     }
 
     if (latitude !== undefined && longitude !== undefined) {
-      dbService.recordGpsLocation(visitor.id, latitude, longitude, accuracy, timestamp);
+      await dbService.recordGpsLocation(visitor.id, latitude, longitude, accuracy, timestamp);
     }
 
     return res.json({ success: true });
@@ -220,23 +220,42 @@ app.get('/api/admin/check-auth', authenticateToken, (req, res) => {
 });
 
 // Admin Analytics Dashboard Stats
-app.get('/api/admin/analytics', authenticateToken, (req, res) => {
-  const summary = dbService.getAnalyticsSummary();
-  return res.json(summary);
+app.get('/api/admin/analytics', authenticateToken, async (req, res) => {
+  try {
+    const summary = await dbService.getAnalyticsSummary();
+    return res.json(summary);
+  } catch (err) {
+    console.error('Admin analytics error:', err);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 // Admin Visitors List
-app.get('/api/admin/visitors', authenticateToken, (req, res) => {
-  const visitors = dbService.getVisitorsList();
-  return res.json({ visitors });
+app.get('/api/admin/visitors', authenticateToken, async (req, res) => {
+  try {
+    const visitors = await dbService.getVisitorsList();
+    return res.json({ visitors });
+  } catch (err) {
+    console.error('Admin visitors error:', err);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 // Admin Locations (IP Geolocation vs Browser GPS)
-app.get('/api/admin/locations', authenticateToken, (req, res) => {
-  const locations = dbService.getLocationsList();
-  return res.json(locations);
+app.get('/api/admin/locations', authenticateToken, async (req, res) => {
+  try {
+    const locations = await dbService.getLocationsList();
+    return res.json(locations);
+  } catch (err) {
+    console.error('Admin locations error:', err);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
-app.listen(PORT, () => {
-  console.log(`[API Server] Running on http://localhost:${PORT}`);
-});
+if (!process.env.VERCEL && !process.env.NOW_BUILDER) {
+  app.listen(PORT, () => {
+    console.log(`[API Server] Running on http://localhost:${PORT}`);
+  });
+}
+
+export default app;
