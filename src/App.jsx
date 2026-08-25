@@ -216,17 +216,15 @@ export default function App() {
         {/* Public Portfolio Route */}
         <Route path="/" element={<PublicPortfolio />} />
 
-        {/* Admin Login Route */}
+        {/* Dedicated Admin Login Route */}
         <Route path="/admin/login" element={<AdminLogin />} />
 
-        {/* Admin Protected Routes */}
-        <Route path="/admin" element={<AdminLayout />}>
-          <Route index element={<Navigate to="/admin/dashboard" replace />} />
-          <Route path="dashboard" element={<AdminDashboard />} />
-          <Route path="visitors" element={<AdminVisitors />} />
-          <Route path="locations" element={<AdminLocations />} />
-          <Route path="map" element={<AdminMap />} />
-        </Route>
+        {/* Protected Admin Routes */}
+        <Route path="/admin/dashboard" element={<AdminLayout><AdminDashboard /></AdminLayout>} />
+        <Route path="/admin/visitors" element={<AdminLayout><AdminVisitors /></AdminLayout>} />
+        <Route path="/admin/locations" element={<AdminLayout><AdminLocations /></AdminLayout>} />
+        <Route path="/admin/map" element={<AdminLayout><AdminMap /></AdminLayout>} />
+        <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
 
         {/* Fallback route */}
         <Route path="*" element={<Navigate to="/" replace />} />

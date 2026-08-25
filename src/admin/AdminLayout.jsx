@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Outlet, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { LayoutDashboard, Users, MapPin, Map, LogOut, Shield } from 'lucide-react';
 
-export default function AdminLayout() {
+export default function AdminLayout({ children }) {
   const [authorized, setAuthorized] = useState(false);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
@@ -140,7 +140,7 @@ export default function AdminLayout() {
 
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-6">
-        <Outlet />
+        {children || <Outlet />}
       </main>
     </div>
   );
