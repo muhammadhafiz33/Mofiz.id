@@ -105,10 +105,10 @@ export default function Navbar() {
                     {/* Brand Logo */}
                     <a href="#home" onClick={(e) => scrollTo(e, 'home')} className="flex items-center gap-2 group">
                         <div className="w-8 h-8 rounded-lg flex items-center justify-center overflow-hidden transition-all duration-300 group-hover:scale-110">
-                            <img src="/logo.png" alt="Hafiz.dev Logo" className="w-full h-full object-contain" />
+                            <img src="/logo.png" alt="Hafiz.id Logo" className="w-full h-full object-contain" />
                         </div>
                         <span className="text-sm font-semibold tracking-tight text-white font-mono transition-colors duration-300 group-hover:text-blue-500 dark:text-white body-text-primary">
-                            Hafiz<span className="text-blue-500">.dev</span>
+                            Hafiz<span className="text-blue-500">.id</span>
                         </span>
                     </a>
 

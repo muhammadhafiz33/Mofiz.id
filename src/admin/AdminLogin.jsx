@@ -60,7 +60,7 @@ export default function AdminLogin() {
             </div>
             <div>
               <h2 className="text-xl font-bold font-mono tracking-tight text-white">Admin Authentication</h2>
-              <p className="text-xs text-gray-400 font-mono mt-1">Hafiz.dev Control Panel Access</p>
+              <p className="text-xs text-gray-400 font-mono mt-1">Hafiz.id Control Panel Access</p>
             </div>
           </div>
 

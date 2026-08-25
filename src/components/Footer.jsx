@@ -58,9 +58,9 @@ export default function Footer() {
                             onClick={handleFooterLogoClick}
                         >
                             <div className="w-8 h-8 rounded-lg flex items-center justify-center overflow-hidden">
-                                <img src="/logo.png" alt="Hafiz.dev Logo" className="w-full h-full object-contain" />
+                                <img src="/logo.png" alt="Hafiz.id Logo" className="w-full h-full object-contain" />
                             </div>
-                            <span className="text-sm font-bold text-white font-mono">Hafiz.dev</span>
+                            <span className="text-sm font-bold text-white font-mono">Hafiz.id</span>
                         </div>
                         <p className="text-xs text-gray-500 leading-relaxed max-w-sm">
                             Informatics Engineering student building high-performance, responsive fullstack web environments and AI-based integrations.

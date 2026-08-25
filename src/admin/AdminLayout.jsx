@@ -69,7 +69,7 @@ export default function AdminLayout() {
             </div>
             <div>
               <h1 className="text-sm font-bold font-mono text-white flex items-center gap-2">
-                Hafiz<span className="text-blue-500">.dev</span>
+                Hafiz<span className="text-blue-500">.id</span>
                 <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 uppercase">Admin Panel</span>
               </h1>
             </div>

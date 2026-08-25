@@ -28,7 +28,7 @@ export default function PrivacyModal({ isOpen, onClose }) {
 
         <div className="space-y-4 text-xs text-gray-300 leading-relaxed font-sans">
           <p>
-            Website portfolio Hafiz.dev menggunakan sistem analytics internal sederhana untuk memahami preferensi pengunjung dan mengoptimalkan pengalaman pengguna.
+            Website portfolio Hafiz.id menggunakan sistem analytics internal sederhana untuk memahami preferensi pengunjung dan mengoptimalkan pengalaman pengguna.
           </p>
 
           <div className="bg-white/5 p-3.5 rounded-xl border border-white/10 space-y-2">
