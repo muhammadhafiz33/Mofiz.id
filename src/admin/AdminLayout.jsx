@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Outlet, useNavigate, useLocation } from 'react-router-dom';
+import { Outlet, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { LayoutDashboard, Users, MapPin, Map, LogOut, Shield } from 'lucide-react';
 
 export default function AdminLayout() {
@@ -49,7 +49,7 @@ export default function AdminLayout() {
     );
   }
 
-  if (!authorized) return null;
+  if (!authorized) return <Navigate to="/admin/login" replace />;
 
   const navItems = [
     { path: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
