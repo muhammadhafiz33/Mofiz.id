@@ -176,7 +176,7 @@ export default function AdminVisitors() {
           <h2 className="text-xl font-bold font-mono text-white flex items-center gap-2 flex-wrap">
             Visitor Directory
             <span className="text-xs px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">
-              {filteredVisitors.length} / {visitors.length} Logged
+              {search.trim() ? `${filteredVisitors.length} dari ${visitors.length} Data Terfilter` : `Total ${visitors.length} Data Terdaftar`}
             </span>
             <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1.5 font-mono">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
