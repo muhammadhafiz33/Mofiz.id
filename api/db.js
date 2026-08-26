@@ -468,5 +468,27 @@ export const dbService = {
 
       return { ipLocations, gpsLocations };
     }
+  },
+
+  async clearVisitorsList() {
+    if (tursoClient) {
+      await tursoClient.execute('DELETE FROM page_views');
+      await tursoClient.execute('DELETE FROM location_consents');
+      await tursoClient.execute('DELETE FROM gps_locations');
+      await tursoClient.execute('DELETE FROM visitors');
+    } else if (sqliteDb) {
+      sqliteDb.prepare('DELETE FROM page_views').run();
+      sqliteDb.prepare('DELETE FROM location_consents').run();
+      sqliteDb.prepare('DELETE FROM gps_locations').run();
+      sqliteDb.prepare('DELETE FROM visitors').run();
+    } else {
+      fileDb.load();
+      fileDb.data.visitors = [];
+      fileDb.data.page_views = [];
+      fileDb.data.location_consents = [];
+      fileDb.data.gps_locations = [];
+      fileDb.save();
+    }
+    return { success: true };
   }
 };

@@ -309,6 +309,17 @@ app.get(['/api/admin/visitors', '/admin/visitors'], authenticateToken, async (re
   }
 });
 
+// Admin Clear Visitors List
+app.delete(['/api/admin/visitors', '/admin/visitors'], authenticateToken, async (req, res) => {
+  try {
+    await dbService.clearVisitorsList();
+    return res.json({ success: true, message: 'All visitor logs cleared successfully' });
+  } catch (err) {
+    console.error('Admin clear visitors error:', err);
+    return res.status(500).json({ error: 'Failed to clear visitor logs' });
+  }
+});
+
 // Admin Locations (IP Geolocation vs Browser GPS)
 app.get(['/api/admin/locations', '/admin/locations'], authenticateToken, async (req, res) => {
   try {

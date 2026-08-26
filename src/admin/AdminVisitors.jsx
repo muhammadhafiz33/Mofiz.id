@@ -122,11 +122,17 @@ export default function AdminVisitors() {
     });
   };
 
-  // Handler: Reset local visitor logs
+  // Handler: Clear visitor logs from database and local storage
   const handleClearLogs = () => {
-    if (window.confirm('Clear all visitor logs from local storage?')) {
+    if (window.confirm('Hapus seluruh log pengunjung dari database dan memori lokal?')) {
+      const token = localStorage.getItem('hafiz_admin_token');
       localStorage.removeItem('hafiz_live_visitor_logs');
-      fetchVisitors();
+      fetch('/api/admin/visitors', {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      })
+        .then(() => fetchVisitors())
+        .catch(() => fetchVisitors());
     }
   };
 
