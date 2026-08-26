@@ -1,43 +1,14 @@
 import { useEffect, useState } from 'react';
-import { MapPin, Navigation, Globe, ExternalLink } from 'lucide-react';
+import { MapPin, Navigation, Globe, ExternalLink, Search, X } from 'lucide-react';
 
 export default function AdminLocations() {
   const [ipLocations, setIpLocations] = useState([]);
   const [gpsLocations, setGpsLocations] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
 
   useEffect(() => {
     const token = localStorage.getItem('hafiz_admin_token');
-    const defaultIpLocs = [
-      {
-        anonymous_session_id: 'sess_padang_9842',
-        ip_address: '180.252.164.21',
-        country: 'Indonesia',
-        estimated_city: 'Padang',
-        isp: 'PT Telekomunikasi Indonesia',
-        created_at: new Date().toISOString()
-      },
-      {
-        anonymous_session_id: 'sess_jkt_4421',
-        ip_address: '114.122.208.55',
-        country: 'Indonesia',
-        estimated_city: 'Jakarta',
-        isp: 'PT Indosat Tbk',
-        created_at: new Date().toISOString()
-      }
-    ];
-
-    const defaultGpsLocs = [
-      {
-        anonymous_session_id: 'sess_padang_9842',
-        ip_address: '180.252.164.21',
-        latitude: -0.9471,
-        longitude: 100.4172,
-        accuracy: 12,
-        timestamp: new Date().toISOString(),
-        location_source: 'browser_gps'
-      }
-    ];
 
     const getMergedLocations = (remoteIp = [], remoteGps = []) => {
       try {
@@ -45,44 +16,57 @@ export default function AdminLocations() {
         const ipMap = new Map();
         const gpsMap = new Map();
 
-        defaultIpLocs.forEach(v => ipMap.set(v.anonymous_session_id, v));
-        defaultGpsLocs.forEach(v => gpsMap.set(v.anonymous_session_id, v));
-
         remoteIp.forEach(v => { if (v.anonymous_session_id) ipMap.set(v.anonymous_session_id, v); });
         remoteGps.forEach(v => { if (v.anonymous_session_id) gpsMap.set(v.anonymous_session_id, v); });
 
         localLogs.forEach(v => {
           if (v.anonymous_session_id) {
             ipMap.set(v.anonymous_session_id, {
+              id: v.id || Date.now(),
               anonymous_session_id: v.anonymous_session_id,
-              ip_address: v.ip_address || '180.252.164.21',
-              country: v.country || 'Indonesia',
-              estimated_city: v.estimated_city || 'Padang',
-              isp: v.isp || 'PT Telekomunikasi Indonesia',
-              created_at: v.created_at || new Date().toISOString()
+              ip_address: v.ip_address || 'Detecting...',
+              country: v.country || 'Unknown',
+              estimated_city: v.estimated_city || 'Unknown',
+              isp: v.isp || 'Provider Network',
+              created_at: v.created_at || new Date().toISOString(),
+              timestamp: v.last_seen || v.created_at || new Date().toISOString()
             });
+
             if (v.gps) {
               gpsMap.set(v.anonymous_session_id, {
+                id: v.id || Date.now(),
                 anonymous_session_id: v.anonymous_session_id,
-                ip_address: v.ip_address || '180.252.164.21',
+                ip_address: v.ip_address || 'Detecting...',
                 latitude: v.gps.latitude,
                 longitude: v.gps.longitude,
                 accuracy: v.gps.accuracy,
-                timestamp: v.gps.timestamp,
+                timestamp: v.gps.timestamp || new Date().toISOString(),
                 location_source: 'browser_gps'
               });
             }
           }
         });
 
+        const getTimestampMs = (v) => {
+          const raw = v.timestamp || v.last_seen || v.created_at;
+          if (raw) {
+            const ms = new Date(raw).getTime();
+            if (!isNaN(ms)) return ms;
+          }
+          return Number(v.id) || 0;
+        };
+
+        const ipSorted = Array.from(ipMap.values()).sort((a, b) => getTimestampMs(b) - getTimestampMs(a));
+        const gpsSorted = Array.from(gpsMap.values()).sort((a, b) => getTimestampMs(b) - getTimestampMs(a));
+
         return {
-          ip: Array.from(ipMap.values()),
-          gps: Array.from(gpsMap.values())
+          ip: ipSorted,
+          gps: gpsSorted
         };
       } catch (e) {
         return {
-          ip: remoteIp.length ? remoteIp : defaultIpLocs,
-          gps: remoteGps.length ? remoteGps : defaultGpsLocs
+          ip: remoteIp,
+          gps: remoteGps
         };
       }
     };
@@ -105,6 +89,28 @@ export default function AdminLocations() {
       });
   }, []);
 
+  const filterList = (list) => {
+    const q = search.toLowerCase().trim();
+    if (!q) return list;
+
+    return list.filter((item) => {
+      const ts = item.timestamp || item.created_at ? new Date(item.timestamp || item.created_at).toLocaleString() : '';
+      return (
+        (item.anonymous_session_id || '').toLowerCase().includes(q) ||
+        (item.ip_address || '').toLowerCase().includes(q) ||
+        (item.country || '').toLowerCase().includes(q) ||
+        (item.estimated_city || '').toLowerCase().includes(q) ||
+        (item.isp || '').toLowerCase().includes(q) ||
+        (item.latitude !== undefined && String(item.latitude).includes(q)) ||
+        (item.longitude !== undefined && String(item.longitude).includes(q)) ||
+        ts.toLowerCase().includes(q)
+      );
+    });
+  };
+
+  const filteredIpLocations = filterList(ipLocations);
+  const filteredGpsLocations = filterList(gpsLocations);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64 text-gray-400 font-mono text-xs">
@@ -115,11 +121,34 @@ export default function AdminLocations() {
 
   return (
     <div className="space-y-8 text-left">
-      <div>
-        <h2 className="text-xl font-bold font-mono text-white">Location Monitoring</h2>
-        <p className="text-xs text-gray-400 font-mono mt-1">
-          Separated monitoring for Estimated IP Geolocation vs Permission-Granted Browser GPS Data.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-xl font-bold font-mono text-white">Location Monitoring</h2>
+          <p className="text-xs text-gray-400 font-mono mt-1">
+            Separated monitoring for Estimated IP Geolocation vs Permission-Granted Browser GPS Data.
+          </p>
+        </div>
+
+        {/* Search Bar */}
+        <div className="relative max-w-xs w-full">
+          <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
+          <input
+            type="text"
+            placeholder="Search location logs..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full bg-white/5 border rounded-xl py-2 pl-9 pr-8 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 font-mono transition-colors"
+            style={{ borderColor: 'var(--border-color)' }}
+          />
+          {search && (
+            <button
+              onClick={() => setSearch('')}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
+            >
+              <X size={12} />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Section A: Estimated IP Location */}
@@ -135,7 +164,7 @@ export default function AdminLocations() {
             </div>
           </div>
           <span className="text-xs font-mono px-3 py-1 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">
-            {ipLocations.length} Records
+            {filteredIpLocations.length} / {ipLocations.length} Records
           </span>
         </div>
 
@@ -153,12 +182,12 @@ export default function AdminLocations() {
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
-              {ipLocations.length === 0 ? (
+              {filteredIpLocations.length === 0 ? (
                 <tr>
-                  <td colSpan="7" className="py-4 text-center text-gray-500">No estimated IP locations recorded yet.</td>
+                  <td colSpan="7" className="py-4 text-center text-gray-500">No matching estimated IP locations.</td>
                 </tr>
               ) : (
-                ipLocations.map((loc) => (
+                filteredIpLocations.map((loc) => (
                   <tr key={loc.id} className="hover:bg-white/5 transition-colors">
                     <td className="py-3 px-3 text-blue-400 font-semibold">{loc.anonymous_session_id}</td>
                     <td className="py-3 px-3 text-emerald-400 font-mono font-semibold">{loc.ip_address || '127.0.0.1'}</td>
@@ -198,7 +227,7 @@ export default function AdminLocations() {
             </div>
           </div>
           <span className="text-xs font-mono px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-            {gpsLocations.length} Records
+            {filteredGpsLocations.length} / {gpsLocations.length} Records
           </span>
         </div>
 
@@ -217,12 +246,12 @@ export default function AdminLocations() {
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
-              {gpsLocations.length === 0 ? (
+              {filteredGpsLocations.length === 0 ? (
                 <tr>
-                  <td colSpan="8" className="py-4 text-center text-gray-500">No Browser GPS locations permission granted yet.</td>
+                  <td colSpan="8" className="py-4 text-center text-gray-500">No matching Browser GPS locations.</td>
                 </tr>
               ) : (
-                gpsLocations.map((loc) => (
+                filteredGpsLocations.map((loc) => (
                   <tr key={loc.id} className="hover:bg-white/5 transition-colors">
                     <td className="py-3 px-3 text-emerald-400 font-semibold">{loc.anonymous_session_id}</td>
                     <td className="py-3 px-3 text-emerald-400 font-mono font-semibold">{loc.ip_address || '127.0.0.1'}</td>

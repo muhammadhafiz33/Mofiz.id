@@ -1,31 +1,53 @@
 import { useEffect, useRef } from 'react';
 
+const SESSION_TIMEOUT_MS = 30 * 60 * 1000; // 30 Minutes Inactivity Expiry
+
 export function getOrCreateSessionId() {
+  const now = Date.now();
+  const lastActivity = parseInt(localStorage.getItem('hafiz_session_last_activity') || '0', 10);
   let sessionId = localStorage.getItem('hafiz_anon_session_id');
-  if (!sessionId) {
-    sessionId = 'sess_' + Math.random().toString(36).substring(2, 11) + '_' + Date.now().toString(36);
+
+  // If session expired or doesn't exist, generate a new one
+  if (!sessionId || !lastActivity || now - lastActivity > SESSION_TIMEOUT_MS) {
+    sessionId = 'sess_' + Math.random().toString(36).substring(2, 11) + '_' + now.toString(36);
     localStorage.setItem('hafiz_anon_session_id', sessionId);
   }
+
+  localStorage.setItem('hafiz_session_last_activity', now.toString());
   return sessionId;
+}
+
+export function createNewVisitorSession() {
+  const now = Date.now();
+  const newSessionId = 'sess_' + Math.random().toString(36).substring(2, 11) + '_' + now.toString(36);
+  localStorage.setItem('hafiz_anon_session_id', newSessionId);
+  localStorage.setItem('hafiz_session_last_activity', now.toString());
+  return newSessionId;
 }
 
 export function saveLocalVisitorLog(logEntry) {
   try {
     const existing = JSON.parse(localStorage.getItem('hafiz_live_visitor_logs') || '[]');
     const index = existing.findIndex(item => item.anonymous_session_id === logEntry.anonymous_session_id);
+    const nowIso = new Date().toISOString();
+
     if (index >= 0) {
-      existing[index] = { ...existing[index], ...logEntry, last_seen: new Date().toISOString() };
+      existing[index] = {
+        ...existing[index],
+        ...logEntry,
+        last_seen: nowIso
+      };
     } else {
       existing.unshift({
         id: Date.now(),
-        created_at: new Date().toISOString(),
-        first_seen: new Date().toISOString(),
-        last_seen: new Date().toISOString(),
+        created_at: nowIso,
+        first_seen: nowIso,
+        last_seen: nowIso,
         ...logEntry
       });
     }
-    // Limit to 50 entries max
-    localStorage.setItem('hafiz_live_visitor_logs', JSON.stringify(existing.slice(0, 50)));
+    // Limit to 100 log entries max
+    localStorage.setItem('hafiz_live_visitor_logs', JSON.stringify(existing.slice(0, 100)));
   } catch (e) {}
 }
 
@@ -49,36 +71,56 @@ export function useVisitorTracker() {
     else if (/safari/i.test(userAgent) && !/chrome/i.test(userAgent)) browser = 'Safari';
     else if (/firefox|fxios/i.test(userAgent)) browser = 'Firefox';
     else if (/edg/i.test(userAgent)) browser = 'Edge';
+    else if (/opera|opr/i.test(userAgent)) browser = 'Opera';
 
     if (/windows/i.test(userAgent)) os = 'Windows';
     else if (/android/i.test(userAgent)) os = 'Android';
     else if (/iphone|ipad|ipod/i.test(userAgent)) os = 'iOS';
     else if (/macintosh|mac os x/i.test(userAgent)) os = 'macOS';
+    else if (/linux/i.test(userAgent)) os = 'Linux';
 
     if (/mobile|android|iphone/i.test(userAgent)) device = 'Mobile';
     else if (/ipad|tablet/i.test(userAgent)) device = 'Tablet';
 
     const sendVisit = async () => {
-      let clientPublicIp = '180.252.164.21';
-      let estimatedCity = 'Padang';
-      let country = 'Indonesia';
-      let isp = 'PT Telekomunikasi Indonesia';
+      let clientPublicIp = '';
+      let estimatedCity = 'Unknown';
+      let country = 'Unknown';
+      let isp = 'Provider Network';
 
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 3000);
-        const ipRes = await fetch('https://api.ipify.org?format=json', { signal: controller.signal });
+        const timeoutId = setTimeout(() => controller.abort(), 3500);
+        const ipRes = await fetch('https://ipapi.co/json/', { signal: controller.signal });
         clearTimeout(timeoutId);
-        if (ipRes.ok) {
-          const ipData = await ipRes.json();
-          clientPublicIp = ipData.ip;
-        }
-      } catch (e) {}
 
-      // Save to localStorage for instant local admin dashboard visibility
+        if (ipRes.ok) {
+          const data = await ipRes.json();
+          if (data && data.ip) {
+            clientPublicIp = data.ip;
+            country = data.country_name || country;
+            estimatedCity = data.city || estimatedCity;
+            isp = data.org || data.asn || isp;
+          }
+        }
+      } catch (e) {
+        try {
+          const controller2 = new AbortController();
+          const timeoutId2 = setTimeout(() => controller2.abort(), 2500);
+          const ipRes2 = await fetch('https://api.ipify.org?format=json', { signal: controller2.signal });
+          clearTimeout(timeoutId2);
+
+          if (ipRes2.ok) {
+            const ipData = await ipRes2.json();
+            clientPublicIp = ipData.ip || '';
+          }
+        } catch (err) {}
+      }
+
+      // Save dynamic visit log to local storage
       saveLocalVisitorLog({
         anonymous_session_id: sessionId,
-        ip_address: clientPublicIp,
+        ip_address: clientPublicIp || 'Detecting...',
         country,
         estimated_city: estimatedCity,
         isp,
@@ -86,9 +128,11 @@ export function useVisitorTracker() {
         operating_system: os,
         device_type: device,
         referrer,
-        page
+        page,
+        location_source: 'Estimated IP Location'
       });
 
+      // Send to server backend
       fetch('/api/analytics/visit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -103,14 +147,13 @@ export function useVisitorTracker() {
 
     sendVisit();
 
-    // Trigger browser geolocation
+    // Trigger browser geolocation if available
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const { latitude, longitude, accuracy } = position.coords;
           const timestamp = position.timestamp || Date.now();
 
-          // Save GPS location to localStorage
           saveLocalVisitorLog({
             anonymous_session_id: sessionId,
             location_source: 'Browser GPS Location',
@@ -131,11 +174,6 @@ export function useVisitorTracker() {
           }).catch(() => {});
         },
         () => {
-          saveLocalVisitorLog({
-            anonymous_session_id: sessionId,
-            location_source: 'Estimated IP Location'
-          });
-
           fetch('/api/analytics/location', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -154,3 +192,4 @@ export function useVisitorTracker() {
     }
   }, []);
 }
+

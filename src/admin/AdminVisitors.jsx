@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
-import { Search, Eye, X, Shield, Globe, Navigation, Clock, Monitor, ExternalLink } from 'lucide-react';
+import { useEffect, useState, useCallback } from 'react';
+import { Search, Eye, X, Shield, Globe, Navigation, Clock, Monitor, ExternalLink, UserPlus, Trash2, RefreshCw } from 'lucide-react';
+import { createNewVisitorSession, saveLocalVisitorLog } from '../hooks/useVisitorTracker';
 
 export default function AdminVisitors() {
   const [visitors, setVisitors] = useState([]);
@@ -7,59 +8,50 @@ export default function AdminVisitors() {
   const [selectedVisitor, setSelectedVisitor] = useState(null);
   const [search, setSearch] = useState('');
 
-  useEffect(() => {
+  const fetchVisitors = useCallback(() => {
+    setLoading(true);
     const token = localStorage.getItem('hafiz_admin_token');
-    const fallbackVisitors = [
-      {
-        id: 1,
-        anonymous_session_id: 'sess_padang_9842',
-        ip_address: '180.252.164.21',
-        country: 'Indonesia',
-        estimated_city: 'Padang',
-        isp: 'PT Telekomunikasi Indonesia',
-        browser: 'Chrome',
-        operating_system: 'Windows',
-        device_type: 'Desktop',
-        referrer: 'Direct',
-        location_source: 'Browser GPS Location',
-        created_at: new Date().toISOString(),
-        gps: { latitude: -0.9471, longitude: 100.4172, accuracy: 12 }
-      },
-      {
-        id: 2,
-        anonymous_session_id: 'sess_jkt_4421',
-        ip_address: '114.122.208.55',
-        country: 'Indonesia',
-        estimated_city: 'Jakarta',
-        isp: 'PT Indosat Tbk',
-        browser: 'Safari',
-        operating_system: 'iOS',
-        device_type: 'Mobile',
-        referrer: 'https://google.com',
-        location_source: 'Estimated IP Location',
-        created_at: new Date().toISOString()
-      }
-    ];
 
     const getMergedVisitors = (remoteList = []) => {
       try {
         const localLogs = JSON.parse(localStorage.getItem('hafiz_live_visitor_logs') || '[]');
         const map = new Map();
 
-        fallbackVisitors.forEach(v => map.set(v.anonymous_session_id, v));
         remoteList.forEach(v => {
           if (v.anonymous_session_id) map.set(v.anonymous_session_id, v);
         });
+
         localLogs.forEach(v => {
           if (v.anonymous_session_id) {
             const prev = map.get(v.anonymous_session_id) || {};
-            map.set(v.anonymous_session_id, { ...prev, ...v });
+            const created = prev.created_at || v.created_at || new Date().toISOString();
+            const last = v.last_seen || prev.last_seen || created;
+            const first = prev.first_seen || v.first_seen || created;
+
+            map.set(v.anonymous_session_id, {
+              ...prev,
+              ...v,
+              id: prev.id || v.id || Date.now(),
+              created_at: created,
+              first_seen: first,
+              last_seen: last
+            });
           }
         });
 
-        return Array.from(map.values());
+        const getTimestampMs = (v) => {
+          const raw = v.last_seen || v.created_at || v.first_seen;
+          if (raw) {
+            const ms = new Date(raw).getTime();
+            if (!isNaN(ms)) return ms;
+          }
+          return Number(v.id) || 0;
+        };
+
+        // Return array sorted by newest last_seen or created_at descending (top to bottom)
+        return Array.from(map.values()).sort((a, b) => getTimestampMs(b) - getTimestampMs(a));
       } catch (e) {
-        return remoteList.length ? remoteList : fallbackVisitors;
+        return remoteList;
       }
     };
 
@@ -77,16 +69,87 @@ export default function AdminVisitors() {
       });
   }, []);
 
+  useEffect(() => {
+    fetchVisitors();
+  }, [fetchVisitors]);
+
+  // Handler: Simulate New Visitor Session for testing
+  const handleSimulateVisitor = () => {
+    const newSessionId = createNewVisitorSession();
+    const cities = [
+      { city: 'Jakarta', country: 'Indonesia', ip: '114.122.208.' + Math.floor(Math.random() * 250), isp: 'PT Indosat Tbk' },
+      { city: 'Surabaya', country: 'Indonesia', ip: '180.252.164.' + Math.floor(Math.random() * 250), isp: 'PT Telekomunikasi Indonesia' },
+      { city: 'Bandung', country: 'Indonesia', ip: '118.99.112.' + Math.floor(Math.random() * 250), isp: 'PT XL Axiata Tbk' },
+      { city: 'Singapore', country: 'Singapore', ip: '128.199.200.' + Math.floor(Math.random() * 250), isp: 'DigitalOcean Cloud' },
+      { city: 'Tokyo', country: 'Japan', ip: '153.120.44.' + Math.floor(Math.random() * 250), isp: 'NTT Communications' }
+    ];
+    const pick = cities[Math.floor(Math.random() * cities.length)];
+    const browsers = ['Chrome', 'Firefox', 'Safari', 'Edge'];
+    const osList = ['Windows', 'macOS', 'iOS', 'Android', 'Linux'];
+    const devices = ['Desktop', 'Mobile', 'Tablet'];
+
+    const newLog = {
+      anonymous_session_id: newSessionId,
+      ip_address: pick.ip,
+      country: pick.country,
+      estimated_city: pick.city,
+      isp: pick.isp,
+      browser: browsers[Math.floor(Math.random() * browsers.length)],
+      operating_system: osList[Math.floor(Math.random() * osList.length)],
+      device_type: devices[Math.floor(Math.random() * devices.length)],
+      referrer: Math.random() > 0.5 ? 'https://google.com' : 'Direct',
+      page: '/',
+      page_views: ['/'],
+      location_source: 'Estimated IP Location'
+    };
+
+    saveLocalVisitorLog(newLog);
+
+    // Send to backend
+    fetch('/api/analytics/visit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        anonymous_session_id: newSessionId,
+        client_public_ip: pick.ip,
+        page: '/',
+        referrer: newLog.referrer
+      })
+    }).finally(() => {
+      fetchVisitors();
+    });
+  };
+
+  // Handler: Reset local visitor logs
+  const handleClearLogs = () => {
+    if (window.confirm('Clear all visitor logs from local storage?')) {
+      localStorage.removeItem('hafiz_live_visitor_logs');
+      fetchVisitors();
+    }
+  };
+
   const filteredVisitors = visitors.filter((v) => {
-    const query = search.toLowerCase();
+    const query = search.toLowerCase().trim();
+    if (!query) return true;
+
+    const pagesStr = Array.isArray(v.page_views) ? v.page_views.join(' ') : (v.page || '');
+    const dateStr = v.created_at ? new Date(v.created_at).toLocaleString() : '';
+    const gpsStr = v.gps ? `${v.gps.latitude} ${v.gps.longitude}` : '';
+
     return (
       (v.anonymous_session_id || '').toLowerCase().includes(query) ||
       (v.ip_address || '').toLowerCase().includes(query) ||
       (v.country || '').toLowerCase().includes(query) ||
       (v.estimated_city || '').toLowerCase().includes(query) ||
+      (v.isp || '').toLowerCase().includes(query) ||
       (v.browser || '').toLowerCase().includes(query) ||
       (v.operating_system || '').toLowerCase().includes(query) ||
-      (v.device_type || '').toLowerCase().includes(query)
+      (v.device_type || '').toLowerCase().includes(query) ||
+      (v.referrer || '').toLowerCase().includes(query) ||
+      (v.location_source || '').toLowerCase().includes(query) ||
+      pagesStr.toLowerCase().includes(query) ||
+      dateStr.toLowerCase().includes(query) ||
+      gpsStr.toLowerCase().includes(query)
     );
   });
 
@@ -100,23 +163,62 @@ export default function AdminVisitors() {
 
   return (
     <div className="space-y-6 text-left">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold font-mono text-white">Visitor Directory</h2>
-          <p className="text-xs text-gray-400 font-mono mt-1">Detailed visitor session logs and privacy metrics.</p>
+          <h2 className="text-xl font-bold font-mono text-white flex items-center gap-2">
+            Visitor Directory
+            <span className="text-xs px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">
+              {filteredVisitors.length} / {visitors.length} Logged
+            </span>
+          </h2>
+          <p className="text-xs text-gray-400 font-mono mt-1">Detailed visitor session logs, multi-field search & location tracking.</p>
         </div>
 
-        {/* Search */}
-        <div className="relative max-w-xs w-full">
-          <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
-          <input
-            type="text"
-            placeholder="Search IP, session, city..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-white/5 border rounded-xl py-2 pl-9 pr-4 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 font-mono transition-colors"
-            style={{ borderColor: 'var(--border-color)' }}
-          />
+        {/* Action Controls & Search */}
+        <div className="flex flex-wrap items-center gap-2 max-w-lg w-full justify-start md:justify-end">
+          <div className="relative flex-1 min-w-[200px]">
+            <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
+            <input
+              type="text"
+              placeholder="Search IP, session, city, browser, ISP..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full bg-white/5 border rounded-xl py-2 pl-9 pr-8 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 font-mono transition-colors"
+              style={{ borderColor: 'var(--border-color)' }}
+            />
+            {search && (
+              <button
+                onClick={() => setSearch('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
+              >
+                <X size={12} />
+              </button>
+            )}
+          </div>
+
+          <button
+            onClick={fetchVisitors}
+            title="Refresh List"
+            className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 border border-white/10 transition-all"
+          >
+            <RefreshCw size={14} />
+          </button>
+
+          <button
+            onClick={handleSimulateVisitor}
+            className="px-3 py-2 rounded-xl bg-blue-500 hover:bg-blue-600 text-white font-mono font-semibold text-xs transition-all inline-flex items-center gap-1.5 shadow-md shadow-blue-500/20 active:scale-95"
+          >
+            <UserPlus size={14} />
+            <span>Simulate Visitor</span>
+          </button>
+
+          <button
+            onClick={handleClearLogs}
+            title="Clear Local Storage Logs"
+            className="p-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 transition-all"
+          >
+            <Trash2 size={14} />
+          </button>
         </div>
       </div>
 

@@ -7,16 +7,47 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     const token = localStorage.getItem('hafiz_admin_token');
-    const fallback = {
-      totalVisitors: 12,
-      visitorsToday: 5,
-      visitorsWeek: 12,
-      visitorsMonth: 12,
-      totalPageViews: 38,
-      mostVisitedPage: '/',
-      devices: [{ device_type: 'Desktop', count: 8 }, { device_type: 'Mobile', count: 4 }],
-      browsers: [{ browser: 'Chrome', count: 9 }, { browser: 'Safari', count: 3 }],
-      osList: [{ operating_system: 'Windows', count: 7 }, { operating_system: 'iOS', count: 3 }, { operating_system: 'Android', count: 2 }]
+
+    const getLocalAnalyticsSummary = () => {
+      try {
+        const logs = JSON.parse(localStorage.getItem('hafiz_live_visitor_logs') || '[]');
+        const totalVisitors = logs.length;
+        const now = new Date();
+        const todayStr = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+        const weekAgoStr = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
+        const monthAgoStr = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
+
+        const visitorsToday = logs.filter(v => (v.created_at || v.first_seen) >= todayStr).length;
+        const visitorsWeek = logs.filter(v => (v.created_at || v.first_seen) >= weekAgoStr).length;
+        const visitorsMonth = logs.filter(v => (v.created_at || v.first_seen) >= monthAgoStr).length;
+
+        const deviceMap = {};
+        const browserMap = {};
+        const osMap = {};
+
+        logs.forEach(v => {
+          if (v.device_type) deviceMap[v.device_type] = (deviceMap[v.device_type] || 0) + 1;
+          if (v.browser) browserMap[v.browser] = (browserMap[v.browser] || 0) + 1;
+          if (v.operating_system) osMap[v.operating_system] = (osMap[v.operating_system] || 0) + 1;
+        });
+
+        return {
+          totalVisitors,
+          visitorsToday,
+          visitorsWeek,
+          visitorsMonth,
+          totalPageViews: logs.length,
+          mostVisitedPage: '/',
+          devices: Object.entries(deviceMap).map(([device_type, count]) => ({ device_type, count })),
+          browsers: Object.entries(browserMap).map(([browser, count]) => ({ browser, count })),
+          osList: Object.entries(osMap).map(([operating_system, count]) => ({ operating_system, count }))
+        };
+      } catch (e) {
+        return {
+          totalVisitors: 0, visitorsToday: 0, visitorsWeek: 0, visitorsMonth: 0, totalPageViews: 0,
+          mostVisitedPage: '/', devices: [], browsers: [], osList: []
+        };
+      }
     };
 
     fetch('/api/admin/analytics', {
@@ -27,12 +58,12 @@ export default function AdminDashboard() {
         if (resData && !resData.error && typeof resData.totalVisitors === 'number') {
           setData(resData);
         } else {
-          setData(fallback);
+          setData(getLocalAnalyticsSummary());
         }
         setLoading(false);
       })
       .catch(() => {
-        setData(fallback);
+        setData(getLocalAnalyticsSummary());
         setLoading(false);
       });
   }, []);
@@ -46,11 +77,11 @@ export default function AdminDashboard() {
   }
 
   const activeData = data || {
-    totalVisitors: 12,
-    visitorsToday: 5,
-    visitorsWeek: 12,
-    visitorsMonth: 12,
-    totalPageViews: 38,
+    totalVisitors: 0,
+    visitorsToday: 0,
+    visitorsWeek: 0,
+    visitorsMonth: 0,
+    totalPageViews: 0,
     mostVisitedPage: '/',
     devices: [],
     browsers: [],

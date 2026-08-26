@@ -41,60 +41,51 @@ export default function AdminMap() {
 
   useEffect(() => {
     const token = localStorage.getItem('hafiz_admin_token');
-    const defaultData = {
-      ipLocations: [
-        {
-          anonymous_session_id: 'sess_padang_9842',
-          ip_address: '180.252.164.21',
-          country: 'Indonesia',
-          estimated_city: 'Padang',
-          isp: 'PT Telekomunikasi Indonesia'
-        },
-        {
-          anonymous_session_id: 'sess_jkt_4421',
-          ip_address: '114.122.208.55',
-          country: 'Indonesia',
-          estimated_city: 'Jakarta',
-          isp: 'PT Indosat Tbk'
-        }
-      ],
-      gpsLocations: [
-        {
-          anonymous_session_id: 'sess_padang_9842',
-          ip_address: '180.252.164.21',
-          latitude: -0.9471,
-          longitude: 100.4172,
-          accuracy: 12,
-          timestamp: new Date().toISOString()
-        }
-      ]
-    };
 
     const getMergedMapLocations = (data = {}) => {
       try {
         const localLogs = JSON.parse(localStorage.getItem('hafiz_live_visitor_logs') || '[]');
-        const ipList = [...(data.ipLocations || []), ...defaultData.ipLocations];
-        const gpsList = [...(data.gpsLocations || []), ...defaultData.gpsLocations];
+        const ipMap = new Map();
+        const gpsMap = new Map();
+
+        (data.ipLocations || []).forEach(v => { if (v.anonymous_session_id) ipMap.set(v.anonymous_session_id, v); });
+        (data.gpsLocations || []).forEach(v => { if (v.anonymous_session_id) gpsMap.set(v.anonymous_session_id, v); });
 
         localLogs.forEach(v => {
-          if (v.gps && v.gps.latitude && v.gps.longitude) {
-            gpsList.unshift({
+          if (v.anonymous_session_id) {
+            ipMap.set(v.anonymous_session_id, {
+              id: v.id || Date.now(),
               anonymous_session_id: v.anonymous_session_id,
-              ip_address: v.ip_address || '180.252.164.21',
-              latitude: v.gps.latitude,
-              longitude: v.gps.longitude,
-              accuracy: v.gps.accuracy,
-              timestamp: v.gps.timestamp
+              ip_address: v.ip_address || 'Detecting...',
+              country: v.country || 'Unknown',
+              estimated_city: v.estimated_city || 'Unknown',
+              isp: v.isp || 'Provider Network',
+              timestamp: v.last_seen || v.created_at || new Date().toISOString()
             });
+
+            if (v.gps && v.gps.latitude && v.gps.longitude) {
+              gpsMap.set(v.anonymous_session_id, {
+                id: v.id || Date.now(),
+                anonymous_session_id: v.anonymous_session_id,
+                ip_address: v.ip_address || 'Detecting...',
+                latitude: v.gps.latitude,
+                longitude: v.gps.longitude,
+                accuracy: v.gps.accuracy,
+                timestamp: v.gps.timestamp || new Date().toISOString()
+              });
+            }
           }
         });
 
         return {
-          ipLocations: ipList,
-          gpsLocations: gpsList
+          ipLocations: Array.from(ipMap.values()),
+          gpsLocations: Array.from(gpsMap.values())
         };
       } catch (e) {
-        return defaultData;
+        return {
+          ipLocations: data.ipLocations || [],
+          gpsLocations: data.gpsLocations || []
+        };
       }
     };
 

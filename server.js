@@ -72,7 +72,7 @@ function parseUserAgent(ua = '') {
   return { browser, os, device };
 }
 
-// Helper: IP Geolocation using client_public_ip, Vercel Headers or ip-api.com
+// Helper: IP Geolocation using client_public_ip, Vercel Headers or ip-api.com / ipapi.co
 async function fetchIpGeolocation(req, clientPublicIp = '') {
   let targetIp = clientPublicIp;
 
@@ -99,6 +99,21 @@ async function fetchIpGeolocation(req, clientPublicIp = '') {
     } catch (e) {
       console.warn('[Geolocation] ip-api lookup failed:', e.message);
     }
+
+    try {
+      const res2 = await fetch(`https://ipapi.co/${targetIp}/json/`);
+      if (res2.ok) {
+        const data2 = await res2.json();
+        if (data2 && data2.ip) {
+          return {
+            ip: data2.ip,
+            country: data2.country_name || 'Unknown',
+            estimated_city: data2.city || 'Unknown',
+            isp: data2.org || data2.asn || 'Provider Network'
+          };
+        }
+      }
+    } catch (e) {}
   }
 
   const vercelCountry = req.headers['x-vercel-ip-country'];
@@ -107,19 +122,19 @@ async function fetchIpGeolocation(req, clientPublicIp = '') {
   if (vercelCountry || vercelCity) {
     return {
       ip: targetIp || 'Unknown IP',
-      country: vercelCountry || 'Indonesia',
-      estimated_city: vercelCity ? decodeURIComponent(vercelCity) : 'Padang',
+      country: vercelCountry || 'Unknown',
+      estimated_city: vercelCity ? decodeURIComponent(vercelCity) : 'Unknown',
       isp: 'Vercel Provider Network'
     };
   }
 
   return {
-    ip: targetIp || '127.0.0.1',
-    country: 'Indonesia',
-    estimated_city: 'Padang',
-    isp: 'Localhost Network'
+    ip: targetIp || '127.0.0.1 (Localhost)',
+    country: 'Local Environment',
+    estimated_city: 'Development Mode',
+    isp: 'Local System Network'
   };
-// Middleware: Authenticate Admin JWT
+}// Middleware: Authenticate Admin JWT
 function authenticateToken(req, res, next) {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
