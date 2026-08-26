@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { Search, Eye, X, Shield, Globe, Navigation, Clock, Monitor, ExternalLink, UserPlus, Trash2, RefreshCw } from 'lucide-react';
+import { Search, Eye, X, Shield, Globe, Navigation, Clock, Monitor, ExternalLink, UserPlus, Trash2, RefreshCw, ChevronLeft, ChevronRight, Layers } from 'lucide-react';
 import { createNewVisitorSession, saveLocalVisitorLog } from '../hooks/useVisitorTracker';
 
 export default function AdminVisitors() {
@@ -7,6 +7,8 @@ export default function AdminVisitors() {
   const [loading, setLoading] = useState(true);
   const [selectedVisitor, setSelectedVisitor] = useState(null);
   const [search, setSearch] = useState('');
+  const [pageSize, setPageSize] = useState('all');
+  const [currentPage, setCurrentPage] = useState(1);
 
   const fetchVisitors = useCallback(() => {
     setLoading(true);
@@ -153,6 +155,12 @@ export default function AdminVisitors() {
     );
   });
 
+  const totalFiltered = filteredVisitors.length;
+  const totalPages = pageSize === 'all' ? 1 : Math.ceil(totalFiltered / pageSize) || 1;
+  const displayedVisitors = pageSize === 'all'
+    ? filteredVisitors
+    : filteredVisitors.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64 text-gray-400 font-mono text-xs">
@@ -165,35 +173,63 @@ export default function AdminVisitors() {
     <div className="space-y-6 text-left">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold font-mono text-white flex items-center gap-2">
+          <h2 className="text-xl font-bold font-mono text-white flex items-center gap-2 flex-wrap">
             Visitor Directory
             <span className="text-xs px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">
               {filteredVisitors.length} / {visitors.length} Logged
+            </span>
+            <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1.5 font-mono">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+              Kapasitas: Unlimited (Sesuai Database)
             </span>
           </h2>
           <p className="text-xs text-gray-400 font-mono mt-1">Detailed visitor session logs, multi-field search & location tracking.</p>
         </div>
 
         {/* Action Controls & Search */}
-        <div className="flex flex-wrap items-center gap-2 max-w-lg w-full justify-start md:justify-end">
-          <div className="relative flex-1 min-w-[200px]">
+        <div className="flex flex-wrap items-center gap-2 max-w-xl w-full justify-start md:justify-end">
+          <div className="relative flex-1 min-w-[180px]">
             <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
             <input
               type="text"
               placeholder="Search IP, session, city, browser, ISP..."
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setCurrentPage(1);
+              }}
               className="w-full bg-white/5 border rounded-xl py-2 pl-9 pr-8 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 font-mono transition-colors"
               style={{ borderColor: 'var(--border-color)' }}
             />
             {search && (
               <button
-                onClick={() => setSearch('')}
+                onClick={() => {
+                  setSearch('');
+                  setCurrentPage(1);
+                }}
                 className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
               >
                 <X size={12} />
               </button>
             )}
+          </div>
+
+          {/* Rows Limit Selector */}
+          <div className="flex items-center gap-1 bg-white/5 border rounded-xl px-2.5 py-1.5 text-xs font-mono text-gray-300" style={{ borderColor: 'var(--border-color)' }}>
+            <Layers size={13} className="text-gray-400 shrink-0" />
+            <select
+              value={pageSize}
+              onChange={(e) => {
+                setPageSize(e.target.value === 'all' ? 'all' : Number(e.target.value));
+                setCurrentPage(1);
+              }}
+              className="bg-transparent text-white focus:outline-none cursor-pointer text-xs font-mono"
+            >
+              <option value="all" className="bg-gray-900 text-white">Semua (Tanpa Batas)</option>
+              <option value="25" className="bg-gray-900 text-white">25 per Hal</option>
+              <option value="50" className="bg-gray-900 text-white">50 per Hal</option>
+              <option value="100" className="bg-gray-900 text-white">100 per Hal</option>
+            </select>
           </div>
 
           <button
@@ -242,12 +278,12 @@ export default function AdminVisitors() {
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
-              {filteredVisitors.length === 0 ? (
+              {displayedVisitors.length === 0 ? (
                 <tr>
                   <td colSpan="11" className="py-6 text-center text-gray-500">No visitor records matching query.</td>
                 </tr>
               ) : (
-                filteredVisitors.map((v) => (
+                displayedVisitors.map((v) => (
                   <tr key={v.id} className="hover:bg-white/5 transition-colors">
                     <td className="py-3 px-3 text-gray-500 text-[11px] whitespace-nowrap">
                       {new Date(v.created_at).toLocaleDateString()}{' '}
@@ -289,6 +325,36 @@ export default function AdminVisitors() {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination controls if paginated */}
+        {pageSize !== 'all' && totalPages > 1 && (
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 mt-2 border-t border-white/10 text-xs font-mono text-gray-400">
+            <div>
+              Menampilkan {Math.min((currentPage - 1) * pageSize + 1, totalFiltered)} - {Math.min(currentPage * pageSize, totalFiltered)} dari {totalFiltered} data
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                className="px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 disabled:opacity-30 disabled:cursor-not-allowed border border-white/10 transition-all inline-flex items-center gap-1"
+              >
+                <ChevronLeft size={14} />
+                <span>Prev</span>
+              </button>
+              <span className="text-white font-semibold px-2">
+                {currentPage} / {totalPages}
+              </span>
+              <button
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                className="px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 disabled:opacity-30 disabled:cursor-not-allowed border border-white/10 transition-all inline-flex items-center gap-1"
+              >
+                <span>Next</span>
+                <ChevronRight size={14} />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Visitor Detail Modal */}

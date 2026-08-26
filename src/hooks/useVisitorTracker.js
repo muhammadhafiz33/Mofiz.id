@@ -46,9 +46,14 @@ export function saveLocalVisitorLog(logEntry) {
         ...logEntry
       });
     }
-    // Limit to 100 log entries max
-    localStorage.setItem('hafiz_live_visitor_logs', JSON.stringify(existing.slice(0, 100)));
-  } catch (e) {}
+    // Store all visitor logs without artificial cap (limited only by storage/db capacity)
+    localStorage.setItem('hafiz_live_visitor_logs', JSON.stringify(existing));
+  } catch (e) {
+    try {
+      const existing = JSON.parse(localStorage.getItem('hafiz_live_visitor_logs') || '[]');
+      localStorage.setItem('hafiz_live_visitor_logs', JSON.stringify(existing.slice(0, Math.max(1, existing.length - 10))));
+    } catch (err) {}
+  }
 }
 
 export function useVisitorTracker() {
