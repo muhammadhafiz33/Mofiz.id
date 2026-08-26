@@ -75,56 +75,28 @@ export default function AdminVisitors() {
     fetchVisitors();
   }, [fetchVisitors]);
 
-  // Handler: Simulate New Visitor Session for testing
-  const handleSimulateVisitor = () => {
-    const newSessionId = createNewVisitorSession();
-    const cities = [
-      { city: 'Jakarta', country: 'Indonesia', ip: '114.122.208.' + Math.floor(Math.random() * 250), isp: 'PT Indosat Tbk' },
-      { city: 'Surabaya', country: 'Indonesia', ip: '180.252.164.' + Math.floor(Math.random() * 250), isp: 'PT Telekomunikasi Indonesia' },
-      { city: 'Bandung', country: 'Indonesia', ip: '118.99.112.' + Math.floor(Math.random() * 250), isp: 'PT XL Axiata Tbk' },
-      { city: 'Singapore', country: 'Singapore', ip: '128.199.200.' + Math.floor(Math.random() * 250), isp: 'DigitalOcean Cloud' },
-      { city: 'Tokyo', country: 'Japan', ip: '153.120.44.' + Math.floor(Math.random() * 250), isp: 'NTT Communications' }
-    ];
-    const pick = cities[Math.floor(Math.random() * cities.length)];
-    const browsers = ['Chrome', 'Firefox', 'Safari', 'Edge'];
-    const osList = ['Windows', 'macOS', 'iOS', 'Android', 'Linux'];
-    const devices = ['Desktop', 'Mobile', 'Tablet'];
+  // Handler: Delete single visitor record
+  const handleDeleteSingle = (id, session_id) => {
+    if (window.confirm('Hapus log pengunjung ini dari database?')) {
+      const token = localStorage.getItem('hafiz_admin_token');
+      try {
+        const localLogs = JSON.parse(localStorage.getItem('hafiz_live_visitor_logs') || '[]');
+        const updated = localLogs.filter(v => v.id !== id && v.anonymous_session_id !== session_id);
+        localStorage.setItem('hafiz_live_visitor_logs', JSON.stringify(updated));
+      } catch (e) {}
 
-    const newLog = {
-      anonymous_session_id: newSessionId,
-      ip_address: pick.ip,
-      country: pick.country,
-      estimated_city: pick.city,
-      isp: pick.isp,
-      browser: browsers[Math.floor(Math.random() * browsers.length)],
-      operating_system: osList[Math.floor(Math.random() * osList.length)],
-      device_type: devices[Math.floor(Math.random() * devices.length)],
-      referrer: Math.random() > 0.5 ? 'https://google.com' : 'Direct',
-      page: '/',
-      page_views: ['/'],
-      location_source: 'Estimated IP Location'
-    };
-
-    saveLocalVisitorLog(newLog);
-
-    // Send to backend
-    fetch('/api/analytics/visit', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        anonymous_session_id: newSessionId,
-        client_public_ip: pick.ip,
-        page: '/',
-        referrer: newLog.referrer
+      fetch(`/api/admin/visitors/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
       })
-    }).finally(() => {
-      fetchVisitors();
-    });
+        .then(() => fetchVisitors())
+        .catch(() => fetchVisitors());
+    }
   };
 
-  // Handler: Clear visitor logs from database and local storage
+  // Handler: Clear all visitor logs from database and local storage
   const handleClearLogs = () => {
-    if (window.confirm('Hapus seluruh log pengunjung dari database dan memori lokal?')) {
+    if (window.confirm('Hapus SELURUH log pengunjung dari database dan memori lokal?')) {
       const token = localStorage.getItem('hafiz_admin_token');
       localStorage.removeItem('hafiz_live_visitor_logs');
       fetch('/api/admin/visitors', {
@@ -247,19 +219,12 @@ export default function AdminVisitors() {
           </button>
 
           <button
-            onClick={handleSimulateVisitor}
-            className="px-3 py-2 rounded-xl bg-blue-500 hover:bg-blue-600 text-white font-mono font-semibold text-xs transition-all inline-flex items-center gap-1.5 shadow-md shadow-blue-500/20 active:scale-95"
-          >
-            <UserPlus size={14} />
-            <span>Simulate Visitor</span>
-          </button>
-
-          <button
             onClick={handleClearLogs}
-            title="Clear Local Storage Logs"
-            className="p-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 transition-all"
+            title="Hapus Semua Log Pengunjung dari Database"
+            className="px-3 py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 transition-all inline-flex items-center gap-1.5 font-mono text-xs font-semibold active:scale-95 cursor-pointer"
           >
             <Trash2 size={14} />
+            <span>Hapus Semua</span>
           </button>
         </div>
       </div>
@@ -316,14 +281,24 @@ export default function AdminVisitors() {
                         {v.location_source}
                       </span>
                     </td>
-                    <td className="py-3 px-3 text-right">
-                      <button
-                        onClick={() => setSelectedVisitor(v)}
-                        className="p-1.5 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 transition-all inline-flex items-center gap-1 text-[11px]"
-                      >
-                        <Eye size={13} />
-                        <span>Detail</span>
-                      </button>
+                    <td className="py-3 px-3 text-right whitespace-nowrap">
+                      <div className="flex items-center justify-end gap-1.5">
+                        <button
+                          onClick={() => setSelectedVisitor(v)}
+                          className="p-1.5 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 transition-all inline-flex items-center gap-1 text-[11px]"
+                        >
+                          <Eye size={13} />
+                          <span>Detail</span>
+                        </button>
+                        <button
+                          onClick={() => handleDeleteSingle(v.id, v.anonymous_session_id)}
+                          title="Hapus Log Ini dari Database"
+                          className="p-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 transition-all inline-flex items-center gap-1 text-[11px]"
+                        >
+                          <Trash2 size={13} />
+                          <span>Hapus</span>
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))

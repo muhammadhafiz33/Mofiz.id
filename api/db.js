@@ -470,6 +470,29 @@ export const dbService = {
     }
   },
 
+  async deleteVisitor(id) {
+    if (tursoClient) {
+      await tursoClient.execute({ sql: 'DELETE FROM page_views WHERE visitor_id = ?', args: [id] });
+      await tursoClient.execute({ sql: 'DELETE FROM location_consents WHERE visitor_id = ?', args: [id] });
+      await tursoClient.execute({ sql: 'DELETE FROM gps_locations WHERE visitor_id = ?', args: [id] });
+      await tursoClient.execute({ sql: 'DELETE FROM visitors WHERE id = ?', args: [id] });
+    } else if (sqliteDb) {
+      sqliteDb.prepare('DELETE FROM page_views WHERE visitor_id = ?').run(id);
+      sqliteDb.prepare('DELETE FROM location_consents WHERE visitor_id = ?').run(id);
+      sqliteDb.prepare('DELETE FROM gps_locations WHERE visitor_id = ?').run(id);
+      sqliteDb.prepare('DELETE FROM visitors WHERE id = ?').run(id);
+    } else {
+      fileDb.load();
+      const numId = Number(id);
+      fileDb.data.visitors = fileDb.data.visitors.filter(v => v.id !== numId);
+      fileDb.data.page_views = fileDb.data.page_views.filter(pv => pv.visitor_id !== numId);
+      fileDb.data.location_consents = fileDb.data.location_consents.filter(lc => lc.visitor_id !== numId);
+      fileDb.data.gps_locations = fileDb.data.gps_locations.filter(g => g.visitor_id !== numId);
+      fileDb.save();
+    }
+    return { success: true };
+  },
+
   async clearVisitorsList() {
     if (tursoClient) {
       await tursoClient.execute('DELETE FROM page_views');

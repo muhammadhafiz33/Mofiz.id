@@ -320,6 +320,18 @@ app.delete(['/api/admin/visitors', '/admin/visitors'], authenticateToken, async 
   }
 });
 
+// Admin Delete Single Visitor
+app.delete(['/api/admin/visitors/:id', '/admin/visitors/:id'], authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    await dbService.deleteVisitor(id);
+    return res.json({ success: true, message: 'Visitor deleted successfully' });
+  } catch (err) {
+    console.error('Admin delete single visitor error:', err);
+    return res.status(500).json({ error: 'Failed to delete single visitor' });
+  }
+});
+
 // Admin Locations (IP Geolocation vs Browser GPS)
 app.get(['/api/admin/locations', '/admin/locations'], authenticateToken, async (req, res) => {
   try {
