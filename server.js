@@ -227,9 +227,26 @@ app.post(['/api/analytics/location', '/analytics/location'], async (req, res) =>
       return res.status(400).json({ error: 'anonymous_session_id is required' });
     }
 
-    const visitor = await dbService.getVisitorBySession(anonymous_session_id);
+    let visitor = await dbService.getVisitorBySession(anonymous_session_id);
     if (!visitor) {
-      return res.status(404).json({ error: 'Visitor not found' });
+      const userAgent = req.headers['user-agent'] || '';
+      const { browser, os, device } = parseUserAgent(userAgent);
+      const ipHash = getAnonymizedIp(req);
+      const geo = await fetchIpGeolocation(req);
+      const resolvedIp = geo.ip || getClientIp(req);
+
+      visitor = await dbService.createVisitor({
+        anonymous_session_id,
+        ip_address: resolvedIp,
+        ip_hash: ipHash,
+        country: geo.country,
+        estimated_city: geo.estimated_city,
+        isp: geo.isp,
+        browser,
+        operating_system: os,
+        device_type: device,
+        referrer: 'Direct'
+      });
     }
 
     if (consent_status) {
@@ -238,6 +255,22 @@ app.post(['/api/analytics/location', '/analytics/location'], async (req, res) =>
 
     if (latitude !== undefined && longitude !== undefined) {
       await dbService.recordGpsLocation(visitor.id, latitude, longitude, accuracy, timestamp);
+
+      // Reverse geocode accurate GPS coordinates to update real city (e.g. Bukittinggi)
+      try {
+        const revRes = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=12`, {
+          headers: { 'User-Agent': 'PortfolioGeoTracker/1.0' }
+        });
+        if (revRes.ok) {
+          const revData = await revRes.json();
+          const realCity = revData.address?.city || revData.address?.town || revData.address?.regency || revData.address?.county || revData.address?.state_district;
+          if (realCity) {
+            await dbService.updateVisitorCity(visitor.id, realCity);
+          }
+        }
+      } catch (e) {
+        // Fallback silently if offline/network issue
+      }
     }
 
     return res.json({ success: true });

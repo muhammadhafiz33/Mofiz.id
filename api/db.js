@@ -219,6 +219,26 @@ export const dbService = {
     }
   },
 
+  async updateVisitorCity(id, city) {
+    if (!city) return;
+    if (tursoClient) {
+      await tursoClient.execute({
+        sql: 'UPDATE visitors SET estimated_city = ? WHERE id = ?',
+        args: [city, id]
+      });
+    } else if (sqliteDb) {
+      const stmt = sqliteDb.prepare('UPDATE visitors SET estimated_city = ? WHERE id = ?');
+      stmt.run(city, id);
+    } else {
+      fileDb.load();
+      const visitor = fileDb.data.visitors.find(v => v.id === id);
+      if (visitor) {
+        visitor.estimated_city = city;
+        fileDb.save();
+      }
+    }
+  },
+
   async recordPageView(visitorId, page) {
     const now = new Date().toISOString();
     if (tursoClient) {

