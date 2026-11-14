@@ -117,6 +117,11 @@ export default function AdminMap() {
     ? [Number(firstGps.latitude), Number(firstGps.longitude)]
     : [-0.9471, 100.4172]; // Default to Padang, West Sumatra
 
+  // Sessions that shared real GPS: their IP estimate is redundant, so hide it.
+  const gpsSessionIds = new Set(
+    (locations.gpsLocations || []).map((g) => g.anonymous_session_id).filter(Boolean)
+  );
+
   return (
     <div className="space-y-6 text-left">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -144,7 +149,7 @@ export default function AdminMap() {
       <div className="rounded-3xl border overflow-hidden shadow-2xl relative h-[550px]" style={{ borderColor: 'var(--border-color)' }}>
         <MapContainer
           center={centerPos}
-          zoom={5}
+          zoom={firstGps ? 16 : 5}
           scrollWheelZoom={true}
           style={{ height: '100%', width: '100%', backgroundColor: '#030712' }}
         >
@@ -154,7 +159,9 @@ export default function AdminMap() {
           />
 
           {/* Render IP Locations */}
-          {locations.ipLocations.map((ipLoc) => {
+          {locations.ipLocations
+            .filter((ipLoc) => !gpsSessionIds.has(ipLoc.anonymous_session_id))
+            .map((ipLoc) => {
             const coords = CITY_COORDINATES[ipLoc.estimated_city] || [-0.9471, 100.4172];
             return (
               <Marker key={`ip-${ipLoc.id}`} position={coords} icon={ipIcon}>

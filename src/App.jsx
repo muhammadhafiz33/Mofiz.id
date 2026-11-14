@@ -16,6 +16,7 @@ import Statistics from './components/Statistics';
 import Services from './components/Services';
 import Contact from './components/Contact';
 import Footer from './components/Footer';
+import LocationPermissionCard from './components/LocationPermissionCard';
 import { useVisitorTracker } from './hooks/useVisitorTracker';
 
 import AdminLogin from './admin/AdminLogin';
@@ -203,6 +204,7 @@ function PublicPortfolio() {
           </main>
 
           <Footer />
+          <LocationPermissionCard />
         </motion.div>
       )}
     </>

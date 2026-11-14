@@ -151,50 +151,7 @@ export function useVisitorTracker() {
     };
 
     sendVisit();
-
-    // Trigger browser geolocation if available
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude, accuracy } = position.coords;
-          const timestamp = position.timestamp || Date.now();
-
-          saveLocalVisitorLog({
-            anonymous_session_id: sessionId,
-            location_source: 'Browser GPS Location',
-            gps: { latitude, longitude, accuracy, timestamp }
-          });
-
-          fetch('/api/analytics/location', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              anonymous_session_id: sessionId,
-              latitude,
-              longitude,
-              accuracy,
-              timestamp,
-              consent_status: 'granted'
-            })
-          }).catch(() => {});
-        },
-        () => {
-          fetch('/api/analytics/location', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              anonymous_session_id: sessionId,
-              consent_status: 'denied'
-            })
-          }).catch(() => {});
-        },
-        {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 0
-        }
-      );
-    }
+    // Precise GPS is collected only by LocationPermissionCard, after the visitor opts in.
   }, []);
 }
 
